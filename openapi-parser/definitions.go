@@ -72,7 +72,7 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 			Key:  k,
 			Type: "object",
 		}
-		vTyped := v.(map[string]interface{})
+		vTyped := v.(map[interface{}]interface{})
 		if val := vTyped["title"]; val != nil {
 			def.Description = val.(string)
 		}
@@ -110,13 +110,14 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 							}
 						}
 						if propRef := propValTyped["$ref"]; propRef != nil {
+							// Strip away spec's prefix.
 							prop.Ref = strings.Replace(propRef.(string), "#/definitions/", "", 1)
 						}
 						if propFormat := propValTyped["format"]; propFormat != nil {
 							prop.Format = propFormat.(string)
 						}
 						if propSchema := propValTyped["schema"]; propSchema != nil {
-							if propSchemaTyped, ok := propSchema.(map[string]interface{}); ok {
+							if propSchemaTyped, ok := propSchema.(map[interface{}]interface{}); ok {
 								prop.Type = propSchemaTyped["type"].(string)
 							}
 						}
