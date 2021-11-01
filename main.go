@@ -26,7 +26,6 @@ type Meta struct {
 type Definition struct {
 	Key         string
 	Description string
-	Required    []string
 	Properties  []*DefinitionProperty
 }
 

@@ -22,4 +22,6 @@ type Document struct {
 	Hosts string `yaml:"host"`
 	// The API's type definitions.
 	Definitions map[string]*Definition
+	// The API's responses.
+	Responses map[string]*Response
 }
