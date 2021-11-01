@@ -29,7 +29,7 @@ type DefinitionProperty struct {
 	Type string
 	// The property's description.
 	Description string
-	// The property's reference key.
+	// The property's definition reference key.
 	Ref string
 	// Whether the property is required.
 	Required bool
@@ -63,9 +63,7 @@ var descriptionRegex = regexp.MustCompile(`^(.*\.)`)
 
 // parseIntoDefinitions maps swagger definitions into a new instance of `map[string]*Definition`,
 func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition {
-	// TODO(MZ): Comment this code.
-	// I'm sorry, it's late.
-	defsMap := make(map[string]*Definition)
+	defMap := make(map[string]*Definition)
 	enumsToMap := make([]*enumToMap, 0)
 	for k, v := range rawDefs {
 		def := &Definition{
@@ -161,13 +159,13 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 			def.Properties = props
 		}
 		// Assign definition.
-		defsMap[k] = def
+		defMap[k] = def
 
 		// Map enumeration definitions.
 		for _, enum := range enumsToMap {
 			// Check that this definition hasn't already been defined.
-			if _, ok := defsMap[enum.Key]; !ok {
-				defsMap[enum.Key] = &Definition{
+			if _, ok := defMap[enum.Key]; !ok {
+				defMap[enum.Key] = &Definition{
 					Key:         enum.Key,
 					EnumEntries: enum.Entries,
 					Type:        "enum",
@@ -175,5 +173,5 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 			}
 		}
 	}
-	return defsMap
+	return defMap
 }

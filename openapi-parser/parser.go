@@ -14,5 +14,6 @@ func NewDocument(b []byte) (*Document, error) {
 		Meta:        doc.Meta,
 		Hosts:       doc.Hosts,
 		Definitions: parseIntoDefinitions(doc.Definitions),
+		Responses:   parseIntoResponses(doc.Responses),
 	}, nil
 }
