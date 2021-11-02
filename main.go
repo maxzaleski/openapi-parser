@@ -1,30 +1,27 @@
 package main
 
 import (
-	"fmt"
 	"io"
-	"log"
 	"os"
 
-	openapi_parser "openapi-gen/openapi-parser"
+	"openapi-gen/gen"
 )
 
 func main() {
+	if err := main_(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func main_() error {
 	specFile, err := os.Open("./spec.yml")
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	b, err := io.ReadAll(specFile)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
-	doc, err := openapi_parser.NewDocument(b)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	if false {
-		fmt.Println(doc)
-	}
+	return gen.New(b, ".ts")
 }

@@ -1,4 +1,4 @@
-package openapi_parser
+package parser
 
 import (
 	"regexp"

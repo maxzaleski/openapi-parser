@@ -1,6 +1,10 @@
-package openapi_parser
+package parser
 
-import "gopkg.in/yaml.v2"
+import (
+	"sort"
+
+	"gopkg.in/yaml.v2"
+)
 
 type preParsedDocument struct {
 	Meta        *DocumentMeta          `yaml:"info"`
@@ -28,6 +32,17 @@ type Document struct {
 	Responses map[string]*Response
 	// The API's paths.
 	Paths map[string]*Path
+}
+
+func (d *Document) SortedDefinitionsKeys() []string {
+	keys := make([]string, 0, len(d.Definitions))
+	for k, _ := range d.Definitions {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	return keys
 }
 
 // NewDocument returns a new instance of `Document`.

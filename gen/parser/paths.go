@@ -1,4 +1,4 @@
-package openapi_parser
+package parser
 
 // Path represents an API path.
 type Path struct {
