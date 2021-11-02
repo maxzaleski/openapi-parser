@@ -84,9 +84,9 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 				required[val.(string)] = true
 			}
 		}
-		if val := vTyped["properties"]; val != nil {
+		if properties := vTyped["properties"]; properties != nil {
 			props := make([]*DefinitionProperty, 0)
-			if valTyped, ok := val.(map[interface{}]interface{}); ok {
+			if valTyped, ok := properties.(map[interface{}]interface{}); ok {
 				for propName, propVal := range valTyped {
 					prop := &DefinitionProperty{
 						Key:        propName.(string),

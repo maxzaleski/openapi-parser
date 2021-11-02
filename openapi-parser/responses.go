@@ -37,7 +37,6 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Response {
 		}
 		if vTyped, ok := v.(map[interface{}]interface{}); ok {
 			if headers := vTyped["headers"]; headers != nil {
-				props := make([]*ResponseProperty, 0)
 				if headersTyped, ok := headers.(map[interface{}]interface{}); ok {
 					// Since responses can only be one of the following:
 					//
@@ -53,6 +52,7 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Response {
 						resp.Ref = respRef
 					}
 					// Keys which aren't part of the extended definition.
+					props := make([]*ResponseProperty, 0, len(remainingKeys))
 					for _, propKey := range remainingKeys {
 						prop := &ResponseProperty{
 							Key: propKey,
@@ -76,8 +76,8 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Response {
 							props = append(props, prop)
 						}
 					}
+					resp.Properties = props
 				}
-				resp.Properties = props
 			}
 		}
 		respMap[resp.Key] = resp
@@ -91,12 +91,12 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Response {
 // Always returns a slice of unclassified properties.
 func isExtendedInstance(rawProps map[interface{}]interface{}) (string, []string) {
 	// Map the incoming map's keys into a new slice.
-	keys := make([]string, len(rawProps))
+	keys := make([]string, 0, len(rawProps))
 	for k := range rawProps {
 		keys = append(keys, k.(string))
 	}
 	// Keys to be added to the response's properties.
-	remainingKeys := make([]string, len(rawProps))
+	remainingKeys := make([]string, 0, len(rawProps))
 
 	// Props of `SuccessResponse` which extends `GenericResponse`.
 	var (

@@ -1,5 +1,7 @@
 package openapi_parser
 
+import "gopkg.in/yaml.v2"
+
 type preParsedDocument struct {
 	Meta        *DocumentMeta          `yaml:"info"`
 	Definitions map[string]interface{} `yaml:"definitions"`
@@ -24,4 +26,21 @@ type Document struct {
 	Definitions map[string]*Definition
 	// The API's responses.
 	Responses map[string]*Response
+	// The API's paths.
+	Paths map[string]*Path
+}
+
+// NewDocument returns a new instance of `Document`.
+func NewDocument(b []byte) (*Document, error) {
+	var doc preParsedDocument
+	if err := yaml.Unmarshal(b, &doc); err != nil {
+		return nil, err
+	}
+	return &Document{
+		Meta:        doc.Meta,
+		Hosts:       doc.Hosts,
+		Definitions: parseIntoDefinitions(doc.Definitions),
+		Responses:   parseIntoResponses(doc.Responses),
+		Paths:       parseIntoPaths(doc.Paths),
+	}, nil
 }
