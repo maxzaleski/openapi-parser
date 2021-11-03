@@ -1,11 +1,11 @@
-package gen
+package utils
 
 import (
 	"reflect"
 	"sort"
 )
 
-func mapIntoSortedKeys(m interface{}) []string {
+func MapIntoSortedKeys(m interface{}) []string {
 	keys := reflect.ValueOf(m).MapKeys()
 	sort.Slice(keys, func(i, j int) bool {
 		return keys[i].String() < keys[j].String()
