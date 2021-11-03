@@ -27,7 +27,7 @@ func New(b []byte, extn Extension) error {
 
 	fileName := outDir + "/api" + extn.String()
 	var f *os.File
-	f, err = os.Open(fileName)
+	f, err = os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			logger.Println("os.Open: ", err)
@@ -44,6 +44,9 @@ func New(b []byte, extn Extension) error {
 	}()
 
 	generated := generateFromTemplate(doc, extn, logger)
+	if isDev := os.Getenv("DEV"); isDev != "" {
+		logger.Println(generated)
+	}
 	if _, err = f.WriteString(generated); err != nil {
 		logger.Println("file.WriteString: ", err)
 		return err

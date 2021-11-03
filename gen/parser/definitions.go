@@ -119,6 +119,12 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 								prop.Type = propSchemaTyped["type"].(string)
 							}
 						}
+						// Slices will have their own reference.
+						if propItems := propValTyped["items"]; propItems != nil {
+							if propItemsTyped, ok := propItems.(map[interface{}]interface{}); ok {
+								prop.Ref = strings.Replace(propItemsTyped["$ref"].(string), "#/definitions/", "", 1)
+							}
+						}
 						// Enumerations should be extracted into their own definitions,
 						// and properties should reference them.
 						if propEnum := propValTyped["enum"]; propEnum != nil {
