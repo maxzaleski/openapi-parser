@@ -1,6 +1,27 @@
 package constants
 
 const Countries = `
+/** Country represents a world country. */
+export class Country {
+  // The country's emoji flag.
+  flag: string;
+  // The country's name.
+  name: string;
+  // Two-letter country code (ISO 3166-1 alpha-2).
+  code: string;
+  // The country's abbreviation.
+  abbr: string;
+
+  constructor(code: string) {
+	  const country = COUNTRIES[code];
+
+    this.flag = country.flag;
+    this.name = country.name;
+    this.code = country.code;
+    this.abbr = country.abbr;
+  }
+}
+
 /** COUNTRIES represents a map of countries. */
 export const COUNTRIES: Record<string, Country> = {
   'AF': { flag: '🇦🇫', name: 'Afghanistan', abbr: 'AF', code: '93' } as Country,
@@ -306,25 +327,4 @@ export const COUNTRIES: Record<string, Country> = {
   'YE': { flag: '🇾🇪', name: 'Yemen', abbr: 'YE', code: '967' } as Country,
   'ZM': { flag: '🇿🇲', name: 'Zambia', abbr: 'ZM', code: '260' } as Country,
   'ZW': { flag: '🇿🇼', name: 'Zimbabwe', abbr: 'ZW', code: '263' } as Country,
-};
-
-/** Country represents a world country. */
-export class Country {
-  // The country's emoji flag.
-  flag: string;
-  // The country's name.
-  name: string;
-  // Two-letter country code (ISO 3166-1 alpha-2).
-  code: string;
-  // The country's abbreviation.
-  abbr: string;
-
-  constructor(code: string) {
-	  const country = COUNTRIES[code];
-
-    this.flag = country.flag;
-    this.name = country.name;
-    this.code = country.code;
-    this.abbr = country.abbr;
-  }
-}`
+};`

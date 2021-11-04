@@ -37,6 +37,8 @@ type DefinitionProperty struct {
 	Validation *DefinitionPropertyValidation
 	// The property's format.
 	Format string
+	// The parameter's destination.
+	In string
 }
 
 // enumToMap represents an enumeration to map into a `Definition`.
@@ -53,6 +55,10 @@ type DefinitionPropertyValidation struct {
 	MaxLength int
 	// The property's minimum length (string).
 	MinLength int
+	// The property's maximum (integer).
+	Max int
+	// The property's minimum (integer).
+	Min int
 	// The property's maximum items (slice).
 	MaxItems int
 	// The property's minimum items (slice).
@@ -157,6 +163,12 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 						}
 						if propMaxItems := propValTyped["maxItems"]; propMaxItems != nil {
 							prop.Validation.MaxItems = propMaxItems.(int)
+						}
+						if propMax := propValTyped["maximum"]; propMax != nil {
+							prop.Validation.Max = propMax.(int)
+						}
+						if propMin := propValTyped["minimum"]; propMin != nil {
+							prop.Validation.Min = propMin.(int)
 						}
 					}
 					props = append(props, prop)

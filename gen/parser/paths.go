@@ -1,44 +1,13 @@
 package parser
 
+import "strings"
+
 // Path represents an API path.
 type Path struct {
-	Key             string
-	HTTPVerb        string
-	SuccessResponse string
-	Parameters      []*PathParameter
-}
-
-type PathParameter struct {
-	// The parameter's name.
-	Key string
-	// The parameter's type.
-	Type string
-	// The parameter's description.
-	Description string
-	// The parameter's definition reference key.
-	Ref string
-	// Whether the parameter is required.
-	Required bool
-	// The parameter's validation properties.
-	Validation *PathParameterValidation
-	// The parameter's format.
-	Format string
-	// The parameter's destination.
-	In string
-}
-
-// PathParameterValidation represents the validation properties of a `PathParameter`.
-type PathParameterValidation struct {
-	// The parameter's regex pattern to match (string).
-	Pattern string
-	// The parameter's maximum length (string).
-	MaxLength int
-	// The parameter's minimum length (string).
-	MinLength int
-	// The parameter's maximum items (slice).
-	MaxItems int
-	// The parameter's minimum items (slice).
-	MinItems int
+	Key        string
+	HTTPVerb   string
+	Parameters []*DefinitionProperty
+	Operation  string
 }
 
 // parseIntoPaths maps swagger definitions into a new instance of `map[string]*Path`,
@@ -54,10 +23,10 @@ func parseIntoPaths(rawDefs map[string]interface{}) map[string]*Path {
 				if verbValTyped, ok := verbVal.(map[interface{}]interface{}); ok {
 					if parameters := verbValTyped["parameters"]; parameters != nil {
 						if parametersTyped, ok := parameters.([]interface{}); ok {
-							params := make([]*PathParameter, 0)
+							params := make([]*DefinitionProperty, 0)
 							for _, paramVal := range parametersTyped {
-								param := &PathParameter{
-									Validation: &PathParameterValidation{},
+								param := &DefinitionProperty{
+									Validation: &DefinitionPropertyValidation{},
 								}
 								if paramValTyped, ok := paramVal.(map[interface{}]interface{}); ok {
 									// Properties.
@@ -82,7 +51,20 @@ func parseIntoPaths(rawDefs map[string]interface{}) map[string]*Path {
 									if paramSchema := paramValTyped["schema"]; paramSchema != nil {
 										if paramSchemaTyped, ok := paramSchema.(map[interface{}]interface{}); ok {
 											if paramRef := paramSchemaTyped["$ref"]; paramRef != nil {
-												param.Ref = paramRef.(string)
+												param.Ref = strings.Replace(paramRef.(string), "#/definitions/", "", 1)
+											}
+											if paramType := paramSchemaTyped["type"]; paramType != nil {
+												param.Type = paramType.(string)
+											}
+											if paramType := paramSchemaTyped["items"]; paramType != nil {
+												if paramTypeTyped, ok := paramType.(map[interface{}]interface{}); ok {
+													if paramSliceRef := paramTypeTyped["type"]; paramSliceRef != nil {
+														param.Ref = paramSliceRef.(string)
+													}
+													if paramSliceRef := paramTypeTyped["$ref"]; paramSliceRef != nil {
+														param.Ref = strings.Replace(paramSliceRef.(string), "#/definitions/", "", 1)
+													}
+												}
 											}
 										}
 									}
@@ -109,7 +91,7 @@ func parseIntoPaths(rawDefs map[string]interface{}) map[string]*Path {
 						}
 					}
 					if operationID := verbValTyped["operationId"]; operationID != nil {
-						path.SuccessResponse = operationID.(string) + "Response"
+						path.Operation = operationID.(string)
 					}
 				}
 			}

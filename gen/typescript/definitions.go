@@ -29,6 +29,7 @@ func GenerateFromDefinitions(defs map[string]*parser.Definition) string {
 		} else {
 			if strings.Contains(def.Key, "Response") ||
 				strings.Contains(def.Key, "Request") ||
+				strings.Contains(def.Key, "Error") ||
 				strings.Contains(def.Key, "ListMembers") {
 				resultDef = generateInterface(def)
 			} else {
@@ -50,7 +51,7 @@ func generateInterface(def *parser.Definition) string {
 
 	mappedProps := make([]string, 0, len(def.Properties))
 	for _, prop := range def.Properties {
-		mappedProps = append(mappedProps, generateObjectProperty(prop))
+		mappedProps = append(mappedProps, generateObjectProperty(def.Key, prop))
 	}
 	return fmt.Sprintf(result, def.Key, strings.Join(mappedProps, "\n"))
 }
@@ -72,7 +73,7 @@ func generateClass(def *parser.Definition) string {
 		if strings.HasSuffix(prop.Key, "_at") || strings.Contains(def.Key, "ListMembers") {
 			prop.Type = "ExtendedDate"
 		}
-		mappedProps = append(mappedProps, generateObjectProperty(prop))
+		mappedProps = append(mappedProps, generateObjectProperty(def.Key, prop))
 
 		constructorProp := generateClassConstructorProperty(def.Key, prop)
 		mappedConstructorProps = append(mappedConstructorProps, constructorProp)
@@ -124,7 +125,7 @@ func generateEnum(def *parser.Definition) string {
 }
 
 // generateObjectProperty generates a typescript object property from the given property.
-func generateObjectProperty(prop *parser.DefinitionProperty) string {
+func generateObjectProperty(pKey string, prop *parser.DefinitionProperty) string {
 	result := ""
 
 	propDesc := prop.Description
@@ -141,6 +142,8 @@ func generateObjectProperty(prop *parser.DefinitionProperty) string {
 			propDesc = "The pagination properties."
 		case "address":
 			propDesc = "The entity's address."
+		case "changed_by_self":
+			propDesc = "Whether the whereabouts were updated by the member."
 		}
 	}
 	if propDesc != "" {
@@ -155,7 +158,9 @@ func generateObjectProperty(prop *parser.DefinitionProperty) string {
 	switch {
 	case prop.Ref != "":
 		propType = prop.Ref
-	case prop.Key == "country_code":
+	case prop.Key == "country_code" &&
+		!strings.Contains(pKey, "Request") &&
+		!strings.Contains(pKey, "Response"):
 		prop.Key = "country"
 		propType = "Country"
 	case propType == "integer":
