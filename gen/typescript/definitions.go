@@ -27,6 +27,7 @@ func GenerateFromDefinitions(defs map[string]*parser.Definition) string {
 	return strings.Join(mappedDefs, "\n\n")
 }
 
+// generateInterface generates a typescript interface from the given definition.
 func generateInterface(def *parser.Definition) string {
 	result := ""
 	if defDesc := def.Description; defDesc != "" {
@@ -41,6 +42,7 @@ func generateInterface(def *parser.Definition) string {
 	return fmt.Sprintf(result, def.Key, strings.Join(mappedProps, "\n"))
 }
 
+// generateEnum generates a typescript enum from the given definition.
 func generateEnum(def *parser.Definition) string {
 	result := "enum %s {\n%s\n}"
 
@@ -55,6 +57,7 @@ func generateEnum(def *parser.Definition) string {
 	return fmt.Sprintf(result, def.Key, strings.Join(mappedEntries, "\n"))
 }
 
+// generateProperty generates a typescript object property from the given property.
 func generateProperty(prop *parser.DefinitionProperty) string {
 	result := ""
 
@@ -64,6 +67,12 @@ func generateProperty(prop *parser.DefinitionProperty) string {
 		switch prop.Key {
 		case "whereabouts":
 			propDesc = "The member's last signed-in location."
+		case "data":
+			propDesc = "The response data."
+		case "ok":
+			propDesc = "Whether the request was successful."
+		case "pagination":
+			propDesc = "The pagination properties."
 		}
 	}
 	if propDesc != "" {

@@ -7,6 +7,11 @@ import (
 	"openapi-gen/gen/typescript"
 )
 
-func generateFromTemplate(doc *parser.Document, extn Extension, logger *log.Logger) string {
-	return typescript.GenerateFromDefinitions(doc.Definitions)
+func generateFromDocument(doc *parser.Document, extn Extension, logger *log.Logger) string {
+	switch extn {
+	case ".ts":
+		return typescript.Generate(doc)
+	default:
+		return ""
+	}
 }

@@ -43,7 +43,7 @@ func New(b []byte, extn Extension) error {
 		_ = f.Close()
 	}()
 
-	generated := generateFromTemplate(doc, extn, logger)
+	generated := generateFromDocument(doc, extn, logger)
 	if isDev := os.Getenv("DEV"); isDev != "" {
 		logger.Println(generated)
 	}
