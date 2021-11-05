@@ -13,7 +13,7 @@ import (
 
 // GenerateFromPaths generates typescript types from the given paths.
 func GenerateFromPaths(hosts []string, basePath string, paths map[string]*parser.Path) string {
-	mappedDefs := make([]string, 0, len(paths))
+	mappedDefs := make([]string, 0)
 	mappedMethods := make([]string, 0, len(paths))
 	for _, v := range mapByPkg(paths) {
 		for _, path := range v {
@@ -62,7 +62,7 @@ func generateMethod(path *parser.Path) string {
 	routePathParam := ""
 	regexResult := routePathParamRegex.FindStringSubmatch(path.Key)
 	if len(regexResult) == 2 {
-		routePathParam = regexResult[1]
+		routePathParam = shortenRoutePathParam(regexResult[1])
 	}
 	// Append the path parameter if any.
 	funcConstPath := "'" + routePathParamRegex.ReplaceAllString(path.Key, "") + "'"
@@ -113,6 +113,25 @@ func generateMethod(path *parser.Path) string {
 	)
 }
 
+func shortenRoutePathParam(param string) string {
+	switch param {
+	case "accommodation_id":
+		return "accom_id"
+	case "organisation_id":
+		return "org_id"
+	case "member_id":
+		return "mbr_id"
+	case "location_id":
+		return "loc_id"
+	case "address_id":
+		return "addr_id"
+	case "group_id":
+		return "grp_id"
+	default:
+		return param
+	}
+}
+
 func generateRequest(path *parser.Path) string {
 	mappedProps := make([]string, 0, len(path.Parameters))
 	for _, prop := range sortProperties(path.Parameters) {
@@ -125,11 +144,8 @@ func generateRequest(path *parser.Path) string {
 }
 
 func generateRequestValidation(path *parser.Path) string {
-	mappedProps := make([]string, 0, len(path.Parameters))
+	mappedProps := make([]string, 0)
 	for _, prop := range sortProperties(path.Parameters) {
-		if prop.Ref != "" {
-			mappedProps = append(mappedProps, generateRequestObjectProperty(prop))
-		}
 		mappedProps = append(mappedProps, generateRequestValidationProperty("\t", prop))
 	}
 	return fmt.Sprintf(templates.RequestValidation,

@@ -15,11 +15,10 @@ import (
 
 // GenerateFromDefinitions generates typescript types from the given definitions.
 func GenerateFromDefinitions(defs map[string]*parser.Definition) string {
-	mappedDefs := make([]string, 0, len(defs))
-	mappedDefs = append(mappedDefs,
+	mappedDefs := []string{
 		strings.TrimPrefix(constants.Countries, "\n"),
 		strings.TrimPrefix(constants.ExtendedDate, "\n"),
-	)
+	}
 	for _, k := range utils.MapIntoSortedKeys(defs) {
 		def := defs[k]
 
@@ -118,10 +117,52 @@ func generateEnum(def *parser.Definition) string {
 		if entry == "" {
 			continue
 		}
-		mappedEntries = append(mappedEntries,
-			fmt.Sprintf("\t%s = '%s',", strcase.ToScreamingSnake(entry), entry))
+		switch def.Key {
+		case "Colour":
+			mappedEntries = append(mappedEntries, generateEnumColourProperty(entry))
+		default:
+			mappedEntries = append(mappedEntries,
+				fmt.Sprintf("\t%s = '%s',", strcase.ToScreamingSnake(entry), entry))
+		}
 	}
 	return fmt.Sprintf(result, def.Key, strings.Join(mappedEntries, "\n"))
+}
+
+func generateEnumColourProperty(entry string) string {
+	colourName := ""
+	switch entry {
+	case "1":
+		colourName = "AMBER"
+	case "2":
+		colourName = "ORANGE"
+	case "3":
+		colourName = "TOMATO"
+	case "4":
+		colourName = "RED"
+	case "5":
+		colourName = "CRIMSON"
+	case "6":
+		colourName = "PINK"
+	case "7":
+		colourName = "PLUM"
+	case "8":
+		colourName = "PURPLE"
+	case "9":
+		colourName = "VIOLET"
+	case "10":
+		colourName = "INDIGO"
+	case "11":
+		colourName = "BLUE"
+	case "12":
+		colourName = "CYAN"
+	case "13":
+		colourName = "TEAL"
+	case "14":
+		colourName = "GREEN"
+	case "15":
+		colourName = "GRASS"
+	}
+	return fmt.Sprintf("\t%s = %s,", colourName, entry)
 }
 
 // generateObjectProperty generates a typescript object property from the given property.
@@ -129,8 +170,8 @@ func generateObjectProperty(pKey string, prop *parser.DefinitionProperty) string
 	result := ""
 
 	propDesc := prop.Description
+	// When a property is referenced as another, swagger-go will omit the comment.
 	if propDesc == "" {
-		// When a property is referenced as another, swagger-go will omit the comment.
 		switch prop.Key {
 		case "whereabouts":
 			propDesc = "The member's last signed-in location."
@@ -144,9 +185,19 @@ func generateObjectProperty(pKey string, prop *parser.DefinitionProperty) string
 			propDesc = "The entity's address."
 		case "changed_by_self":
 			propDesc = "Whether the whereabouts were updated by the member."
+		case "image_fallback":
+			propDesc = "The image's fallback."
+		case "colour":
+			propDesc = "The view's display colour."
 		}
 	}
 	if propDesc != "" {
+		if isStandardType(pKey) {
+			switch prop.Key {
+			case "country_code":
+				propDesc = "The entity's country."
+			}
+		}
 		result += "\t/** " + propDesc + " */\n"
 	}
 
@@ -158,9 +209,11 @@ func generateObjectProperty(pKey string, prop *parser.DefinitionProperty) string
 	switch {
 	case prop.Ref != "":
 		propType = prop.Ref
-	case prop.Key == "country_code" &&
-		!strings.Contains(pKey, "Request") &&
-		!strings.Contains(pKey, "Response"):
+		// re: we are only interested in the Colour enum.
+		if propType == "ImageFallback" {
+			propType = "Colour"
+		}
+	case prop.Key == "country_code" && isStandardType(pKey):
 		prop.Key = "country"
 		propType = "Country"
 	case propType == "integer":
@@ -173,10 +226,11 @@ func generateObjectProperty(pKey string, prop *parser.DefinitionProperty) string
 	return result
 }
 
+func isStandardType(key string) bool {
+	return !strings.Contains(key, "Request") && !strings.Contains(key, "Response")
+}
+
 func generateClassConstructorProperty(key string, prop *parser.DefinitionProperty) (result string) {
-	if prop.Ref != "" {
-		fmt.Println(prop.Type)
-	}
 	switch {
 	case strings.HasSuffix(prop.Key, "_at") || strings.Contains(key, "ListMembers"):
 		return fmt.Sprintf("\t\tthis.%[1]s = new ExtendedDate(data.%[1]s);", prop.Key)

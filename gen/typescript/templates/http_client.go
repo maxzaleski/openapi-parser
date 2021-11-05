@@ -18,6 +18,8 @@ enum HTTP_METHOD {
 class HTTPClient {
   /** The user's JWT. */
 	private _token: string;
+	/** The default retry count. */
+	private readonly _defaultRetryCount: number = 3;
 
   constructor(token: string) {
 		this._token = token;
@@ -30,7 +32,7 @@ class HTTPClient {
 
 	/** get executes a GET request. */
   async get<P = any, R = any>(url: string, payload?: P): Promise<R> {
-    return this.do<P, R>(HTTP_METHOD.GET, url, payload);
+    return this.do<P, R>(HTTP_METHOD.GET, url, payload, this._defaultRetryCount);
   }
 
 	/** post executes a POST request. */
@@ -45,43 +47,43 @@ class HTTPClient {
 
 	/** delete executes a DELETE request. */
   async delete<P = any, R = any>(url: string, payload?: P): Promise<R> {
-    return this.do<P, R>(HTTP_METHOD.DELETE, url, payload);
+    return this.do<P, R>(HTTP_METHOD.DELETE, url, payload, this._defaultRetryCount);
   }
 
 	/** do executes a request. */
   private async do<P = any, R = any>(
     method: HTTP_METHOD,
     path: string,
-    payload?: P
+    payload?: P,
+	  retries: number = 0,
   ): Promise<R> {
     if (!this._token) throw new APITokenError();
     const headers: Record<string, string> = { Authorization: this._token };
 
-    let body = undefined;
-    if (payload) {
+    let body: string;
+    if (payload && payload.toString() === '[object Object]') {
       headers['Content-Type'] = 'application/json';
-      try {
-        body = JSON.stringify(payload);
-      } catch (err) {
-        throw 'failed to stringify request payload :' + err;
-      }
+			body = JSON.stringify(payload);
     }
 
-    const url = API_BASE_PATH + path;
-    const resp = await fetch(url, {
+    const resp = await fetch(API_BASE_PATH + path, {
       method,
       headers,
       body,
     });
 		if (process.env.NODE_ENV != "production")
-			console.log(method, path, resp.status, 'payload:', payload)
+			console.debug(method, path, resp.status, {
+				payload,
+				retries,
+			});
 
 		const respData = await resp.json();
-		if (respData.ok) return (respData.data || {}) as R
+		if (respData.ok) return respData as R;
 		else {
 		  const err = respData.error as APIError;
-			if (err.error_type == ErrorType.AUTHENTICATION) window.reload()
-			else throw new APIFetchError(err.message)
+			if (err.error_type === ErrorType.AUTHENTICATION) window.reload()
+			if (retries > 0) return this.do<P, R>(method, path, payload, retries - 1)
+      else throw new APIFetchError(err.message)
 		}
   }
 }

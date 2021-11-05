@@ -2,6 +2,7 @@ package parser
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -137,15 +138,24 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 							enumEntries := make([]string, 0)
 							if propEnumTyped, ok := propEnum.([]interface{}); ok {
 								for _, entry := range propEnumTyped {
-									enumEntries = append(enumEntries, entry.(string))
+									entryTyped, ok := entry.(string)
+									if !ok {
+										entryTyped = strconv.Itoa(entry.(int))
+									}
+									enumEntries = append(enumEntries, entryTyped)
 								}
+
 								key := strcase.ToCamel(prop.Key)
-								prop.Type = "" // Reset to follow ref.
-								prop.Ref = key
-								enumsToMap = append(enumsToMap, &enumToMap{
-									Key:     key,
-									Entries: enumEntries,
-								})
+								// Keys equal to "image_fallback" and "colour" will produce the same enum,
+								// but we are only interested in the misc.Colour enum.
+								if key != "ImageFallback" {
+									prop.Type = "" // Reset to follow ref.
+									prop.Ref = key
+									enumsToMap = append(enumsToMap, &enumToMap{
+										Key:     key,
+										Entries: enumEntries,
+									})
+								}
 							}
 						}
 						// Validation properties.

@@ -4,12 +4,12 @@ const APIClient = `
 /** APIClient represents the BoardingHub API interface. */
 class APIClient {
 	/** The HTTP client. */
-	private readonly _httpClient: HTTPClient
+	private readonly _client: HTTPClient
 	/** The user's JWT'. */
 	private _token: string
 
 	constructor() {
-		this._httpClient = new HTTPClient('');
+		this._client = new HTTPClient('');
 		this._token = '';
 	}
 %s
@@ -26,5 +26,5 @@ export const BoardingHubAPI = new APIClient();`
 const APIClientMethod = `
 	async %s(%s): Promise<%s> {
 		const path = %s;
-	  return await this._httpClient.%s<%s>(%s)
+	  return await this._client.%s<%s>(%s)
 	}`

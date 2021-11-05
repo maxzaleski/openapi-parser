@@ -35,22 +35,21 @@ type ResponseProperty struct {
 
 var entityRegex = regexp.MustCompile(`([aA-zZ]+[a-z])(Create|Get|List)([aA-zZ]+)?Response`)
 
+type Record = map[interface{}]interface{}
+
 // parseIntoResponses maps swagger definitions into a new instance of `map[string]*Response`,
 func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Response {
 	respMap := make(map[string]*Response)
 	for k, v := range rawDefs {
 		// This method will be deprecated soon.
-		// TODO(MZ): Re: api refactor - groups.memberships/${member_id}
+		// TODO(MZ): Re: api refactor - groups.memberships/{member_id}
 		if k == "memberListGroupsResponse" {
 			continue
-		}
-		if k == "membersList" {
-
 		}
 		resp := &Response{
 			Key: strcase.ToCamel(k),
 		}
-		if vTyped, ok := v.(map[interface{}]interface{}); ok {
+		if vTyped, ok := v.(Record); ok {
 			matched := entityRegex.FindStringSubmatch(resp.Key)
 			if len(matched) > 0 {
 				switch matched[2] {
@@ -109,7 +108,7 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Response {
 				}
 			}
 			if schema := vTyped["schema"]; schema != nil {
-				if schemaTyped, ok := schema.(map[interface{}]interface{}); ok {
+				if schemaTyped, ok := schema.(Record); ok {
 					if propRef := schemaTyped["$ref"]; propRef != nil {
 						resp.Ref = strings.Replace(propRef.(string), "#/definitions/", "", 1)
 					}
@@ -125,7 +124,7 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Response {
 //
 // If it is found to be an extension, will return the definition's key.
 // Always returns a slice of unclassified properties.
-func isExtendedInstance(key string, rawProps map[interface{}]interface{}) (string, []string) {
+func isExtendedInstance(key string, rawProps Record) (string, []string) {
 	// Map the incoming map's keys into a new slice.
 	keys := make([]string, 0, len(rawProps))
 	for k := range rawProps {
