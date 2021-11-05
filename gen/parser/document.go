@@ -32,7 +32,7 @@ type Document struct {
 	// The API's type definitions.
 	Definitions map[string]*Definition
 	// The API's responses.
-	Responses map[string]*Response
+	Responses map[string]*Definition
 	// The API's paths.
 	Paths map[string]*Path
 }

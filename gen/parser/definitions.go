@@ -18,8 +18,12 @@ type Definition struct {
 	Description string
 	// The model's properties.
 	Properties []*DefinitionProperty
-	// The model's enum entries.
+	// The model's enum entries (enum only).
 	EnumEntries []string
+	// The model's returned entity (response only).
+	Returns string
+	// The model's extended definition's reference key (response only).
+	Ref string
 }
 
 // DefinitionProperty represents a property of `Definition`.

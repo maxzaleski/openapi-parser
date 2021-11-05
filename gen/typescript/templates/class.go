@@ -6,4 +6,5 @@ export class %s {
 
 	constructor(data: any) {
 %s
-	}%s`
+	}%s
+}`

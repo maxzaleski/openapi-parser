@@ -28,6 +28,12 @@ class HTTPClient {
 	/** setToken updates the local value. */
   setToken(t: string): void {
     this._token = t;
+
+		// Verify that we are in a browser environment.
+		// This class could later be expanded to support Node.js.
+		if (typeof window === 'undefined') {
+      throw new Error('HTTPClient must be used in a browser environment.');
+    }
   }
 
 	/** get executes a GET request. */
@@ -57,13 +63,13 @@ class HTTPClient {
     payload?: P,
 	  retries: number = 0,
   ): Promise<R> {
-    if (!this._token) throw new APITokenError();
-    const headers: Record<string, string> = { Authorization: this._token };
+    if (!this._token) throw new MissingTokenError();
+    const headers: Record<string, string> = { Authorization: 'Bearer ' + this._token };
 
     let body: string;
     if (payload && payload.toString() === '[object Object]') {
       headers['Content-Type'] = 'application/json';
-			body = JSON.stringify(payload);
+      body = JSON.stringify(payload);
     }
 
     const resp = await fetch(API_BASE_PATH + path, {
@@ -83,23 +89,28 @@ class HTTPClient {
 		  const err = respData.error as APIError;
 			if (err.error_type === ErrorType.AUTHENTICATION) window.reload()
 			if (retries > 0) return this.do<P, R>(method, path, payload, retries - 1)
-      else throw new APIFetchError(err.message)
+      else throw new FetchError(err.message)
 		}
   }
+
+	/** isBrowser returns whether the current environment is a browser. */
+	private isBrowser(): boolean {
+		return typeof window !== 'undefined';
+	}
 }
 
-/** APIFetchError represents an error that occurred during fetching from the API. */
-export class APIFetchError extends Error {
+/** FetchError represents an error that occurred during fetching from the API. */
+export class FetchError extends Error {
   constructor(msg: string) {
-    super('api-client: ' + msg);
-    this.name = 'APIFetchError';
+    super('http-client: ' + msg);
+    this.name = 'FetchError';
   }
 }
 
-/** APITokenError represents an empty JWT. */
-export class APITokenError extends Error {
+/** MissingTokenError represents an empty JWT. */
+export class MissingTokenError extends Error {
   constructor() {
-    super('api-client: cannot execute API request: missing token');
-    this.name = 'APITokenError';
+    super('http-client: cannot execute API request: missing token');
+    this.name = 'MissingTokenError';
   }
 }`

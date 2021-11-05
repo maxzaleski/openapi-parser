@@ -18,6 +18,8 @@ func GenerateFromDefinitions(defs map[string]*parser.Definition) string {
 	mappedDefs := []string{
 		strings.TrimPrefix(constants.Countries, "\n"),
 		strings.TrimPrefix(constants.ExtendedDate, "\n"),
+		strings.TrimPrefix(constants.GenericResponse, "\n"),
+		strings.TrimPrefix(constants.SuccessResponse, "\n"),
 	}
 	for _, k := range utils.MapIntoSortedKeys(defs) {
 		def := defs[k]
@@ -26,10 +28,7 @@ func GenerateFromDefinitions(defs map[string]*parser.Definition) string {
 		if def.Type == "enum" {
 			resultDef = generateEnum(def)
 		} else {
-			if strings.Contains(def.Key, "Response") ||
-				strings.Contains(def.Key, "Request") ||
-				strings.Contains(def.Key, "Error") ||
-				strings.Contains(def.Key, "ListMembers") {
+			if strings.Contains(def.Key, "Request") || strings.Contains(def.Key, "ListMembers") {
 				resultDef = generateInterface(def)
 			} else {
 				resultDef = generateClass(def)
@@ -37,6 +36,7 @@ func GenerateFromDefinitions(defs map[string]*parser.Definition) string {
 		}
 		mappedDefs = append(mappedDefs, resultDef)
 	}
+
 	return strings.Join(mappedDefs, "\n\n")
 }
 
@@ -44,9 +44,9 @@ func GenerateFromDefinitions(defs map[string]*parser.Definition) string {
 func generateInterface(def *parser.Definition) string {
 	result := ""
 	if defDesc := def.Description; defDesc != "" {
-		result += "// " + defDesc + "\n"
+		result += "/** " + defDesc + " */\n"
 	}
-	result += "interface %s {\n%s\n}"
+	result += templates.Interface
 
 	mappedProps := make([]string, 0, len(def.Properties))
 	for _, prop := range def.Properties {
@@ -57,6 +57,10 @@ func generateInterface(def *parser.Definition) string {
 
 // generateClass generates a typescript class from the given definition.
 func generateClass(def *parser.Definition) string {
+	if strings.HasSuffix(def.Key, "ResponseBody") {
+		return generateClassResponseBody(def)
+	}
+
 	result := strings.TrimPrefix(templates.Class, "\n")
 
 	// Set the class' description.
@@ -73,22 +77,41 @@ func generateClass(def *parser.Definition) string {
 			prop.Type = "ExtendedDate"
 		}
 		mappedProps = append(mappedProps, generateObjectProperty(def.Key, prop))
-
-		constructorProp := generateClassConstructorProperty(def.Key, prop)
-		mappedConstructorProps = append(mappedConstructorProps, constructorProp)
+		mappedConstructorProps = append(mappedConstructorProps, generateClassConstructorProperty(def.Key, prop))
 	}
-	endOfClass := ""
+
+	// Append class methods if any.
+	methods := ""
 	switch {
 	case def.Key == "Address":
-		endOfClass = "\n" + strings.TrimSuffix(constants.AddressClassMethods, "\n")
+		methods = "\n" + strings.TrimSuffix(constants.AddressClassMethods, "\n")
 	}
-	endOfClass += "\n}"
 
 	return fmt.Sprintf(result,
 		def.Key,
 		strings.Join(mappedProps, "\n"),
 		strings.Join(mappedConstructorProps, "\n"),
-		endOfClass,
+		methods,
+	)
+}
+
+func generateClassResponseBody(def *parser.Definition) string {
+	template := templates.ResponseBody
+	className := def.Key
+	classExtends := "GenericResponse"
+	if len(def.Properties) == 2 {
+		if strings.Contains(strings.ToLower(def.Key), "error") {
+			classExtends = "GenericResponse"
+			template = templates.ResponseErrorBody
+		} else {
+			className += "<T>"
+			classExtends = "SuccessResponse<T>"
+		}
+	}
+
+	return fmt.Sprintf(template,
+		className,
+		classExtends,
 	)
 }
 
@@ -236,13 +259,31 @@ func generateClassConstructorProperty(key string, prop *parser.DefinitionPropert
 		return fmt.Sprintf("\t\tthis.%[1]s = new ExtendedDate(data.%[1]s);", prop.Key)
 	case prop.Key == "country_code":
 		return fmt.Sprintf("\t\tthis.%[1]s = new Country(data.%[1]s);", prop.Key, prop.Type)
-	case prop.Ref != "" && prop.Type == "":
+	case !hasConstructor(prop.Ref) && prop.Type == "":
 		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s as %[2]s;", prop.Key, prop.Ref)
+	case hasConstructor(prop.Ref) && prop.Type == "":
+		return fmt.Sprintf("\t\tthis.%[1]s = new %s(data.%[1]s);", prop.Key, prop.Ref)
 	case prop.Ref != "" && prop.Type == "array":
 		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s.map(item => new %[2]s(item));", prop.Key, prop.Ref)
 	case prop.Ref != "":
 		return fmt.Sprintf("\t\tthis.%[1]s = new %[2]s(data.%[1]s);", prop.Key, prop.Ref)
 	default:
 		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s;", prop.Key)
+	}
+}
+
+func hasConstructor(ref string) bool {
+	switch ref {
+	case
+		"APIError",
+		"Colour",
+		"EntityType",
+		"ErrorCode",
+		"ErrorType",
+		"RelationshipWithMember",
+		"Role":
+		return false
+	default:
+		return true
 	}
 }

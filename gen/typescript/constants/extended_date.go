@@ -15,6 +15,6 @@ export class ExtendedDate extends Date {
   }
 
   formatDistance(suffix = 'ago'): string {
-    return _formatDistance(new Date(), this._date) + ' ' + suffix);
+    return _formatDistance(new Date(), this._date) + ' ' + suffix;
   }
 }`
