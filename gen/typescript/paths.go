@@ -2,6 +2,7 @@ package typescript
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -13,16 +14,23 @@ import (
 // GenerateFromPaths generates typescript types from the given paths.
 func GenerateFromPaths(hosts []string, basePath string, paths map[string]*parser.Path) string {
 	mappedDefs := make([]string, 0, len(paths))
+	mappedMethods := make([]string, 0, len(paths))
 	for _, v := range mapByPkg(paths) {
 		for _, path := range v {
 			if len(path.Parameters) < 1 || len(path.Parameters) == 1 && path.Parameters[0].In == "path" {
 				continue
 			}
-			mappedDefs = append(mappedDefs, generateRequest(path))
 
+			// Request definitions.
+			mappedDefs = append(mappedDefs, generateRequest(path))
+			// Request validation.
 			validationEligibleProps := make([]*parser.DefinitionProperty, 0, len(path.Parameters))
 			for _, param := range path.Parameters {
-				if strings.Contains("string,integer,array", param.Type) && param.In == "body" {
+				if param.In != "body" {
+					continue
+				}
+				switch param.Type {
+				case "string", "integer", "array":
 					validationEligibleProps = append(validationEligibleProps, param)
 				}
 			}
@@ -31,17 +39,78 @@ func GenerateFromPaths(hosts []string, basePath string, paths map[string]*parser
 				pathWithEligibleProps.Parameters = validationEligibleProps
 				mappedDefs = append(mappedDefs, generateRequestValidation(&pathWithEligibleProps))
 			}
+			// API client methods.
+			mappedMethods = append(mappedMethods, generateMethod(path))
 		}
 	}
 	mappedDefs = append(mappedDefs,
-		strings.TrimPrefix(fmt.Sprintf(templates.HTTPClient, hosts[1], hosts[0], basePath), "\n"),
-		strings.TrimPrefix(templates.APIClient, "\n"),
+		fmt.Sprintf(templates.HTTPClient, hosts[1], hosts[0], basePath),
+		fmt.Sprintf(templates.APIClient, strings.Join(mappedMethods, "\n")),
 	)
 	return strings.Join(mappedDefs, "\n")
 }
 
-func generateCollection(key string, paths []*parser.Path) string {
-	return ""
+var (
+	routePathParamRegex = regexp.MustCompile(`{([a-z_]+)}`)
+)
+
+func generateMethod(path *parser.Path) string {
+	// The method's name but capitalised under camel case.
+	operationToCamel := strcase.ToCamel(path.Operation)
+
+	// Extract the path parameters if any.
+	routePathParam := ""
+	regexResult := routePathParamRegex.FindStringSubmatch(path.Key)
+	if len(regexResult) == 2 {
+		routePathParam = regexResult[1]
+	}
+	// Append the path parameter if any.
+	funcConstPath := "'" + routePathParamRegex.ReplaceAllString(path.Key, "") + "'"
+	if routePathParam != "" {
+		funcConstPath += " + " + routePathParam
+	}
+
+	// Extract the function arguments' definitions.
+	var (
+		flagPayload  bool
+		funcArgsDefs string
+	)
+	if routePathParam != "" {
+		funcArgsDefs = routePathParam + ": string"
+	}
+	// We assume a payload if the conditions are met.
+	if len(path.Parameters) > 1 || len(path.Parameters) == 1 && path.Parameters[0].In == "body" {
+		flagPayload = true
+
+		if routePathParam != "" {
+			funcArgsDefs += ", "
+		}
+		funcArgsDefs += "payload: " + operationToCamel + "Request"
+	}
+
+	// Assign the HTTP client's method to call.
+	funcClientMethod := path.HTTPVerb
+	if funcClientMethod == "list" {
+		funcClientMethod = "get"
+	}
+	// Assign the HTTP client method's generics.
+	funcClientMethodGenerics := "void, " + operationToCamel + "Response"
+	// Assign the HTTP client method's arguments.
+	funcClientMethodArgs := "path"
+	if flagPayload {
+		funcClientMethodArgs += ", payload"
+		funcClientMethodGenerics = fmt.Sprintf("%[1]sRequest, %[1]sResponse", operationToCamel)
+	}
+
+	return fmt.Sprintf(templates.APIClientMethod,
+		path.Operation,
+		funcArgsDefs,
+		operationToCamel+"Response",
+		funcConstPath,
+		funcClientMethod,
+		funcClientMethodGenerics,
+		funcClientMethodArgs,
+	)
 }
 
 func generateRequest(path *parser.Path) string {
@@ -58,7 +127,10 @@ func generateRequest(path *parser.Path) string {
 func generateRequestValidation(path *parser.Path) string {
 	mappedProps := make([]string, 0, len(path.Parameters))
 	for _, prop := range sortProperties(path.Parameters) {
-		mappedProps = append(mappedProps, generateRequestValidationProperty(prop))
+		if prop.Ref != "" {
+			mappedProps = append(mappedProps, generateRequestObjectProperty(prop))
+		}
+		mappedProps = append(mappedProps, generateRequestValidationProperty("\t", prop))
 	}
 	return fmt.Sprintf(templates.RequestValidation,
 		strcase.ToCamel(path.Operation),
@@ -66,9 +138,13 @@ func generateRequestValidation(path *parser.Path) string {
 	)
 }
 
-func generateRequestValidationProperty(prop *parser.DefinitionProperty) string {
-	result := "\t" + strcase.ToLowerCamel(prop.Key)
-	indent := "\n\t\t"
+func generateRequestValidationProperty(initialIndent string, prop *parser.DefinitionProperty) string {
+	result := initialIndent + strcase.ToLowerCamel(prop.Key)
+	indent := "\n\t" + initialIndent
+
+	if prop.Ref != "" {
+
+	}
 
 	switch prop.Type {
 	case "string":

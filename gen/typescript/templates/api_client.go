@@ -12,8 +12,7 @@ class APIClient {
 		this._httpClient = new HTTPClient('');
 		this._token = '';
 	}
-
-%
+%s
 
 	/** setToken updates the local value. */
 	setToken(value: string): void {
@@ -24,9 +23,8 @@ class APIClient {
 /** BoardingHubAPI represents the API client instance. */
 export const BoardingHubAPI = new APIClient();`
 
-const ClientCollectionMethod = `
-async %s(%s): Promise<%s> {
-	const path = %s;
-	const { data } = await this.client.%s<%s>(path%s);%s
-}
-`
+const APIClientMethod = `
+	async %s(%s): Promise<%s> {
+		const path = %s;
+	  return await this._httpClient.%s<%s>(%s)
+	}`
