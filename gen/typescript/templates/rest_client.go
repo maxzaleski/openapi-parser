@@ -94,11 +94,6 @@ class RestClient {
       else throw new FetchError(err.message)
 		}
   }
-
-	/** isBrowser returns whether the current environment is a browser. */
-	private isBrowser(): boolean {
-		return typeof window !== 'undefined';
-	}
 }
 
 /** FetchError represents an error that occurred during fetching from the API. */

@@ -17,7 +17,8 @@ func Generate(doc *parser.Document) string {
 		generateStandardTypes(doc.Definitions),
 		generateResponseTypes(doc.Responses),
 		generateRequestTypes(doc.Paths),
-		generateAPIClient(doc.Hosts, doc.BasePath, doc.Paths),
+		generateRestClient(doc.Hosts, doc.BasePath),
+		generateAPIClient(doc.Paths),
 	}
 	return strings.Join(out, "\n\n")
 }
@@ -92,8 +93,13 @@ func generateRequestTypes(defs map[string]*parser.Path) string {
 	return strings.Join(mappedDefs, "\n\n")
 }
 
+// generateRestClient generates the rest client code.
+func generateRestClient(hosts []string, basePath string) string {
+	return fmt.Sprintf(templates.RestClient, hosts[1], hosts[0], basePath)
+}
+
 // generateAPIClient generates the API client code for the given spec.
-func generateAPIClient(hosts []string, basePath string, defs map[string]*parser.Path) string {
+func generateAPIClient(defs map[string]*parser.Path) string {
 	// The client's methods.
 	mappedMethods := make([]string, 0, len(defs))
 	for _, paths := range internal.MapByPkg(defs) {
@@ -107,11 +113,5 @@ func generateAPIClient(hosts []string, basePath string, defs map[string]*parser.
 		}
 	}
 
-	return strings.Join(
-		[]string{
-			fmt.Sprintf(templates.RestClient, hosts[1], hosts[0], basePath),
-			fmt.Sprintf(templates.APIClient, strings.Join(mappedMethods, "\n")),
-		},
-		"\n\n",
-	)
+	return fmt.Sprintf(templates.APIClient, strings.Join(mappedMethods, "\n"))
 }

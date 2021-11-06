@@ -23,10 +23,12 @@ class APIClient {
 }
 
 /** BoardingHubAPI represents the API client instance. */
-export const BoardingHubAPI = new APIClient();`, "\n")
+export const BoardingHubAPI = new APIClient();
+`, "\n")
 
 var APIClientMethod = strings.TrimPrefix(`
 	async %s(%s): Promise<%s> {
 		const path = %s;
 	  return await this._client.%s<%s>(%s)
-	}`, "\n")
+	}
+`, "\n")
