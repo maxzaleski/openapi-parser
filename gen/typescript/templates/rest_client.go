@@ -1,6 +1,8 @@
 package templates
 
-const HTTPClient = `
+import "strings"
+
+var RestClient = strings.TrimPrefix(`
 const API_HOST =
   process.env.NODE_ENV === 'production'
     ? 'https://%s'
@@ -14,8 +16,8 @@ enum HTTP_METHOD {
   DELETE = 'DELETE',
 }
 
-/** HTTPClient represents an HTTP client. */
-class HTTPClient {
+/** RestClient represents an HTTP client. */
+class RestClient {
   /** The user's JWT. */
 	private _token: string;
 	/** The default retry count. */
@@ -32,7 +34,7 @@ class HTTPClient {
 		// Verify that we are in a browser environment.
 		// This class could later be expanded to support Node.js.
 		if (typeof window === 'undefined') {
-      throw new Error('HTTPClient must be used in a browser environment.');
+      throw new Error('RestClient must be used in a browser environment.');
     }
   }
 
@@ -102,7 +104,7 @@ class HTTPClient {
 /** FetchError represents an error that occurred during fetching from the API. */
 export class FetchError extends Error {
   constructor(msg: string) {
-    super('http-client: ' + msg);
+    super('rest-client: ' + msg);
     this.name = 'FetchError';
   }
 }
@@ -110,7 +112,7 @@ export class FetchError extends Error {
 /** MissingTokenError represents an empty JWT. */
 export class MissingTokenError extends Error {
   constructor() {
-    super('http-client: cannot execute API request: missing token');
+    super('rest-client: cannot execute API request: missing token');
     this.name = 'MissingTokenError';
   }
-}`
+}`, "\n")

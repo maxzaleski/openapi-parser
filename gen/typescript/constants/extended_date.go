@@ -1,6 +1,8 @@
 package constants
 
-const ExtendedDate = `
+import "strings"
+
+var ExtendedDate = strings.TrimPrefix(`
 export class ExtendedDate extends Date {
   private readonly _date: Date;
 
@@ -17,4 +19,4 @@ export class ExtendedDate extends Date {
   formatDistance(suffix = 'ago'): string {
     return _formatDistance(new Date(), this._date) + ' ' + suffix;
   }
-}`
+}`, "\n")

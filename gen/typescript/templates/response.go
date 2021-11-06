@@ -2,12 +2,12 @@ package templates
 
 import "strings"
 
-var Response = `
+var Response = strings.TrimPrefix(`
 export class %s extends %s {
   constructor(data: any) {
     super(%s);
   }
-}`
+}`, "\n")
 
 var ResponseBody = strings.TrimPrefix(`
 class %s extends %s {
@@ -27,7 +27,7 @@ class %s extends %s {
   }
 }`, "\n")
 
-var ErrorResponse = `
+var ErrorResponse = strings.TrimPrefix(`
 interface %s extends %s {
 %s
-}`
+}`, "\n")

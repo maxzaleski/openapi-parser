@@ -1,15 +1,17 @@
 package templates
 
-const APIClient = `
+import "strings"
+
+var APIClient = strings.TrimPrefix(`
 /** APIClient represents the BoardingHub API interface. */
 class APIClient {
 	/** The HTTP client. */
-	private readonly _client: HTTPClient
+	private readonly _client: RestClient
 	/** The user's JWT'. */
 	private _token: string
 
 	constructor() {
-		this._client = new HTTPClient('');
+		this._client = new RestClient('');
 		this._token = '';
 	}
 %s
@@ -21,10 +23,10 @@ class APIClient {
 }
 
 /** BoardingHubAPI represents the API client instance. */
-export const BoardingHubAPI = new APIClient();`
+export const BoardingHubAPI = new APIClient();`, "\n")
 
-const APIClientMethod = `
+var APIClientMethod = strings.TrimPrefix(`
 	async %s(%s): Promise<%s> {
 		const path = %s;
 	  return await this._client.%s<%s>(%s)
-	}`
+	}`, "\n")

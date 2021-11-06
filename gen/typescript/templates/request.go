@@ -1,11 +1,13 @@
 package templates
 
-const Request = `
+import "strings"
+
+var Request = strings.Trim(`
 interface %sRequest {
 %s
-}`
+}`, "\n")
 
-const RequestValidation = `
+var RequestValidation = strings.Trim(`
 const %sRequestValidation = yupObject({
 %s
-})`
+})`, "\n")
