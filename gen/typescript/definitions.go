@@ -76,6 +76,7 @@ func generateClass(def *parser.Definition) string {
 		if strings.HasSuffix(prop.Key, "_at") || strings.Contains(def.Key, "ListMembers") {
 			prop.Type = "ExtendedDate"
 		}
+
 		mappedProps = append(mappedProps, generateObjectProperty(def.Key, prop))
 		mappedConstructorProps = append(mappedConstructorProps, generateClassConstructorProperty(def.Key, prop))
 	}
@@ -133,7 +134,24 @@ func sortProperties(props []*parser.DefinitionProperty) []*parser.DefinitionProp
 
 // generateEnum generates a typescript enum from the given definition.
 func generateEnum(def *parser.Definition) string {
-	result := "enum %s {\n%s\n}"
+	template := templates.Enum
+	switch def.Key {
+	case "Role":
+		def.Key = "MemberRole"
+		def.Description = "Role represents a member role."
+	case "EntityType":
+		def.Key = "ViewEntityType"
+		def.Description = "ViewEntityType represents a view entity type."
+	case "ErrorCode":
+		def.Description = "ErrorCode represents an error code."
+	case "ErrorType":
+		def.Description = "ErrorType represents an error type."
+	case "RelationshipWithMember":
+		def.Description = "RelationshipWithMember represents a host-member relationship."
+	}
+	if def.Description != "" {
+		template = "/** " + def.Description + " */\n" + template
+	}
 
 	mappedEntries := make([]string, 0, len(def.Properties))
 	for _, entry := range def.EnumEntries {
@@ -145,10 +163,10 @@ func generateEnum(def *parser.Definition) string {
 			mappedEntries = append(mappedEntries, generateEnumColourProperty(entry))
 		default:
 			mappedEntries = append(mappedEntries,
-				fmt.Sprintf("\t%s = '%s',", strcase.ToScreamingSnake(entry), entry))
+				fmt.Sprintf(templates.EnumStringProperty, strcase.ToScreamingSnake(entry), entry))
 		}
 	}
-	return fmt.Sprintf(result, def.Key, strings.Join(mappedEntries, "\n"))
+	return fmt.Sprintf(template, def.Key, strings.Join(mappedEntries, "\n"))
 }
 
 func generateEnumColourProperty(entry string) string {
@@ -185,7 +203,7 @@ func generateEnumColourProperty(entry string) string {
 	case "15":
 		colourName = "GRASS"
 	}
-	return fmt.Sprintf("\t%s = %s,", colourName, entry)
+	return fmt.Sprintf(templates.EnumNumberProperty, colourName, entry)
 }
 
 // generateObjectProperty generates a typescript object property from the given property.
@@ -230,6 +248,14 @@ func generateObjectProperty(pKey string, prop *parser.DefinitionProperty) string
 	}
 	propType := prop.Type
 	switch {
+	case prop.Ref == "Role":
+		const override = "MemberRole"
+		prop.Ref = override
+		propType = override
+	case prop.Ref == "EntityType":
+		const override = "ViewEntityType"
+		prop.Ref = override
+		propType = override
 	case prop.Ref != "":
 		propType = prop.Ref
 		// re: we are only interested in the Colour enum.
@@ -278,10 +304,11 @@ func hasConstructor(ref string) bool {
 		"APIError",
 		"Colour",
 		"EntityType",
+		"ViewEntityType",
 		"ErrorCode",
 		"ErrorType",
 		"RelationshipWithMember",
-		"Role":
+		"MemberRole":
 		return false
 	default:
 		return true

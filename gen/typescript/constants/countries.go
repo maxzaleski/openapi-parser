@@ -1,6 +1,8 @@
 package constants
 
-const Countries = `
+import "strings"
+
+var Countries = strings.TrimPrefix(`
 /** Country represents a world country. */
 export class Country {
   // The country's emoji flag.
@@ -327,4 +329,4 @@ export const COUNTRIES: Record<string, Country> = {
   'YE': { flag: '🇾🇪', name: 'Yemen', abbr: 'YE', code: '967' } as Country,
   'ZM': { flag: '🇿🇲', name: 'Zambia', abbr: 'ZM', code: '260' } as Country,
   'ZW': { flag: '🇿🇼', name: 'Zimbabwe', abbr: 'ZW', code: '263' } as Country,
-};`
+};`, "\n")

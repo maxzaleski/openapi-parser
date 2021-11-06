@@ -12,7 +12,7 @@ func Generate(doc *parser.Document) string {
 		constants.Imports,
 		GenerateFromDefinitions(doc.Definitions),
 		GenerateFromResponses(doc.Responses),
-		// GenerateFromPaths(doc.Hosts, doc.BasePath, doc.Paths),
+		GenerateFromPaths(doc.Hosts, doc.BasePath, doc.Paths),
 	}
 	return strings.Join(out, "\n\n")
 }
