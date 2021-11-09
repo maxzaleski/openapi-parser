@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"openapi-gen/gen/parser"
+	"openapi-gen/internal/parser"
 )
 
 // SortMapKeysAlphabetically returns an alphabetically-sorted slice of keys from a map.
@@ -23,6 +23,26 @@ func sliceToString(values []reflect.Value) []string {
 		result = append(result, v.String())
 	}
 	return result
+}
+
+// SortSliceKeysAlphabetically returns an alphabetically-sorted slice of keys.
+func SortSliceKeysAlphabetically(keys []string) []string {
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	return keys
+}
+
+// SortKeysByCase returns a case-sorted slice of keys.
+func SortKeysByCase(keys []string) []string {
+	sort.Slice(keys, func(i, j int) bool {
+		first := keys[i][:1]
+		if first == strings.ToLower(first) {
+			return true
+		}
+		return false
+	})
+	return keys
 }
 
 // MapByPkg returns the map with keys matching the different core packages.

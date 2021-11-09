@@ -6,7 +6,8 @@ import (
 
 	"github.com/iancoleman/strcase"
 
-	"openapi-gen/gen/parser"
+	"openapi-gen/internal/parser"
+
 	"openapi-gen/gen/typescript/templates"
 	"openapi-gen/internal"
 )
@@ -16,6 +17,11 @@ var routePathParamRegex = regexp.MustCompile(`{([a-z_]+)}`)
 
 // generateAPIMethod generates a typescript class method from the given definition.
 func generateAPIMethod(def *parser.Path) string {
+	template := templates.APIClientMethod
+	// The method's description.
+	if desc := def.Description; desc != "" {
+		template = toJSDoc("\t", desc) + template
+	}
 	// The method's name but capitalised under camel case.
 	operationAsCamel := strcase.ToCamel(def.Operation)
 
@@ -43,7 +49,7 @@ func generateAPIMethod(def *parser.Path) string {
 		if routePathParam != "" {
 			methodArgs += ", "
 		}
-		methodArgs += "payload: " + operationAsCamel + "Request"
+		methodArgs += "payload: deoutput." + operationAsCamel + "Request"
 	}
 
 	// Method's rest client call.
@@ -52,18 +58,18 @@ func generateAPIMethod(def *parser.Path) string {
 		methodRestFunction = "get"
 	}
 	// Assign the rest client method's generics.
-	methodRestFunctionGenerics := "void, " + operationAsCamel + "Response"
+	methodRestFunctionGenerics := "void, deoutput." + operationAsCamel + "Response"
 	// Assign the rest client method's arguments.
 	methodRestFunctionArgs := "path"
 	if flagPayload {
 		methodRestFunctionArgs += ", payload"
-		methodRestFunctionGenerics = fmt.Sprintf("%[1]sRequest, %[1]sResponse", operationAsCamel)
+		methodRestFunctionGenerics = fmt.Sprintf("deoutput.%[1]sRequest, deoutput.%[1]sResponse", operationAsCamel)
 	}
 
-	return fmt.Sprintf(templates.APIClientMethod,
+	return fmt.Sprintf(template,
 		def.Operation,
 		methodArgs,
-		operationAsCamel+"Response",
+		"deoutput."+operationAsCamel+"Response",
 		methodPath,
 		methodRestFunction,
 		methodRestFunctionGenerics,

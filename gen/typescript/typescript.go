@@ -1,117 +1,54 @@
 package typescript
 
 import (
-	"fmt"
-	"strings"
+	"openapi-gen/internal/output"
+	"openapi-gen/internal/parser"
 
-	"openapi-gen/gen/parser"
 	"openapi-gen/gen/typescript/constants"
-	"openapi-gen/gen/typescript/templates"
-	"openapi-gen/internal"
+	"openapi-gen/internal/slog"
 )
 
-// Generate generates the typescript types for the given spec.
-func Generate(doc *parser.Document) string {
-	out := []string{
-		constants.Imports,
-		generateStandardTypes(doc.Definitions),
-		generateResponseTypes(doc.Responses),
-		generateRequestTypes(doc.Paths),
-		generateRestClient(doc.Hosts, doc.BasePath),
-		generateAPIClient(doc.Paths),
-	}
-	return strings.Join(out, "\n\n")
-}
+const definitionsOutDir = "definitions/"
 
-// generateStandardTypes generates typescript types from the given definitions.
-func generateStandardTypes(defs map[string]*parser.Definition) string {
-	mappedDefs := []string{
-		constants.Countries,
-		constants.ExtendedDate,
-		constants.GenericResponse,
-		constants.SuccessResponse,
-	}
-	for _, k := range internal.SortMapKeysAlphabetically(defs) {
-		def := internal.OverrideDefinition(defs[k])
-		resultType := ""
-		switch {
-		case def.Type == "enum":
-			resultType = generateEnum(def)
-		case strings.HasSuffix(def.Key, "ResponseBody"):
-			resultType = generateClassResponseBody(def)
-		case isInterface(def.Key):
-			resultType = generateInterface(def)
-		default:
-			resultType = generateClass(def)
-		}
-		mappedDefs = append(mappedDefs, resultType)
-	}
+// Generate generates the typescript files for the given spec.
+func Generate(doc *parser.Document, logger slog.Logger) []*output.File {
+	logger.SetPrefix("[Generate] ")
 
-	return strings.Join(mappedDefs, "\n\n")
-}
+	fm := output.NewFileMap()
+	generateOutput(doc, fm, logger)
 
-// generateResponseTypes generates typescript types from the given responses.
-func generateResponseTypes(defs map[string]*parser.Definition) string {
-	mappedDefs := make([]string, 0, len(defs))
-	for _, k := range internal.SortMapKeysAlphabetically(defs) {
-		def := internal.OverrideResponseDefinition(defs[k])
-		mappedDefs = append(mappedDefs, generateClassResponse(def))
-	}
-	return strings.Join(mappedDefs, "\n\n")
-}
-
-// generateRequestTypes generates typescript types from the given paths.
-func generateRequestTypes(defs map[string]*parser.Path) string {
-	mappedDefs := make([]string, 0)
-	for _, paths := range internal.MapByPkg(defs) {
-		for _, path := range paths {
-			// Check if the path is suitable.
-			if !internal.IsSuitedForAPIMethod(path.Parameters) {
-				continue
-			}
-
-			// Request types.
-			mappedDefs = append(mappedDefs, generateClassRequest(path))
-			// Request validation objects.
-			validationEligibleProps := make([]*parser.DefinitionProperty, 0, len(path.Parameters))
-			for _, param := range path.Parameters {
-				if param.In != "body" {
-					continue
-				}
-				if internal.IsPropSuitableForValidation(param.Type) {
-					validationEligibleProps = append(validationEligibleProps, param)
-				}
-			}
-			if len(validationEligibleProps) > 0 {
-				pathWithEligibleProps := *path
-				pathWithEligibleProps.Parameters = validationEligibleProps
-				mappedDefs = append(mappedDefs, generateRequestClassValidationObject(&pathWithEligibleProps))
-			}
-		}
+	// .
+	// ├── definitions
+	// │   ├── index.ts
+	// │   └── m.ts
+	// │   └── e.ts
+	// │   └── responses.ts
+	// │   └── requests.ts
+	// │   └── validation.ts
+	// │   └── countries.ts
+	// └── index.ts
+	// └── rest-client.ts
+	// └── api-client.ts
+	files := make([]*output.File, 0, 10)
+	files = append(files,
+		&output.File{
+			Name: "index",
+			Body: constants.RootIndex,
+		},
+		&output.File{
+			Name:      "index",
+			Directory: definitionsOutDir,
+			Body:      constants.DefinitionsIndex,
+		},
+		&output.File{
+			Name:      "countries",
+			Directory: definitionsOutDir,
+			Body:      constants.Countries,
+		},
+	)
+	for _, k := range fm.Range() {
+		files = append(files, fm.Get(k))
 	}
 
-	return strings.Join(mappedDefs, "\n\n")
-}
-
-// generateRestClient generates the rest client code.
-func generateRestClient(hosts []string, basePath string) string {
-	return fmt.Sprintf(templates.RestClient, hosts[1], hosts[0], basePath)
-}
-
-// generateAPIClient generates the API client code for the given spec.
-func generateAPIClient(defs map[string]*parser.Path) string {
-	// The client's methods.
-	mappedMethods := make([]string, 0, len(defs))
-	for _, paths := range internal.MapByPkg(defs) {
-		for _, path := range paths {
-			// Check if the path is suitable.
-			if !internal.IsSuitedForAPIMethod(path.Parameters) {
-				continue
-			}
-			// API client's methods.
-			mappedMethods = append(mappedMethods, generateAPIMethod(path))
-		}
-	}
-
-	return fmt.Sprintf(templates.APIClient, strings.Join(mappedMethods, "\n"))
+	return files
 }

@@ -3,6 +3,8 @@ package templates
 import "strings"
 
 var RestClient = strings.TrimPrefix(`
+import { APIError, ErrorType } from './definitions';
+
 const API_HOST =
   process.env.NODE_ENV === 'production'
     ? 'https://%s'
@@ -17,7 +19,7 @@ enum HTTP_METHOD {
 }
 
 /** RestClient represents an HTTP client. */
-class RestClient {
+export class RestClient {
   /** The user's JWT. */
 	private _token: string;
 	/** The default retry count. */

@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"openapi-gen/gen/parser"
+	"openapi-gen/internal/parser"
+
 	"openapi-gen/gen/typescript/templates"
 )
 
@@ -27,7 +28,7 @@ func generateInterface(def *parser.Definition) string {
 	// Interface's properties.
 	mappedProps := make([]string, 0, len(def.Properties))
 	for _, prop := range def.Properties {
-		mappedProps = append(mappedProps, generateObjectProperty(prop))
+		mappedProps = append(mappedProps, generateObjectProperty("", prop))
 	}
 
 	return fmt.Sprintf(template, def.Key, strings.Join(mappedProps, "\n"))

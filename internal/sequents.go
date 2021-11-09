@@ -3,7 +3,7 @@ package internal
 import (
 	"strings"
 
-	"openapi-gen/gen/parser"
+	"openapi-gen/internal/parser"
 )
 
 // HasConstructor checks whether the given key has a constructor.
@@ -42,7 +42,27 @@ func IsSuitedForAPIMethod(props []*parser.DefinitionProperty) bool {
 // IsPropSuitableForValidation checks whether the given property is suitable for validation.
 func IsPropSuitableForValidation(t string) bool {
 	switch t {
-	case "string", "number", "array":
+	case "string", "integer", "array":
+		return true
+	default:
+		return false
+	}
+}
+
+// IsBasicType checks whether the given type is a basic type.
+func IsBasicType(t string) bool {
+	switch t {
+	case "string", "integer", "array":
+		return true
+	default:
+		return false
+	}
+}
+
+// IsPaginatedResponse checks whether the given type is a paginated response.
+func IsPaginatedResponse(key string) bool {
+	switch key {
+	case "listMembersResponseBody":
 		return true
 	default:
 		return false

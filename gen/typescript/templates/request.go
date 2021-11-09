@@ -3,7 +3,7 @@ package templates
 import "strings"
 
 var Request = strings.Trim(`
-interface %sRequest {
+export interface %sRequest {
 %s
 }`, "\n")
 

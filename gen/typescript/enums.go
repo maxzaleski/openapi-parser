@@ -6,7 +6,8 @@ import (
 
 	"github.com/iancoleman/strcase"
 
-	"openapi-gen/gen/parser"
+	"openapi-gen/internal/parser"
+
 	"openapi-gen/gen/typescript/templates"
 )
 

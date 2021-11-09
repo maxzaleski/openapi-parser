@@ -26,9 +26,21 @@ class SuccessResponse<T> extends GenericResponse {
 }`, "\n")
 
 var ConstructorSuperRegisterOrganisation = strings.TrimPrefix(`{
-			...data,
-			data: {
-				member_snapshot: new MemberSnapshot(data.data.member_snapshot),
-				organisation_snapshot: new OrganisationSnapshot(data.data.organisation_snapshot),
-			},
+      ...data,
+      data: {
+        member_snapshot: new m.MemberSnapshot(data.data.member_snapshot),
+        organisation_snapshot: new m.OrganisationSnapshot(data.data.organisation_snapshot),
+      },
 		}`, "\n")
+
+var PaginatedResponse = strings.TrimPrefix(`
+/** Pagination represents a response's pagination properties. */
+export class PaginatedResponse<T> extends SuccessResponse<T> {
+	/** The total count of records. */
+	readonly pagination: m.Pagination;
+
+	constructor(data: any) {
+		super(data);
+		this.pagination = new m.Pagination(data.pagination);
+	}
+}`, "\n")

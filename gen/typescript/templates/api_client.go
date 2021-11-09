@@ -3,6 +3,9 @@ package templates
 import "strings"
 
 var APIClient = strings.TrimPrefix(`
+import { RestClient } from './rest-client';
+import * as defs from './definitions';
+
 /** APIClient represents the BoardingHub API interface. */
 class APIClient {
 	/** The HTTP client. */
@@ -14,8 +17,8 @@ class APIClient {
 		this._client = new RestClient('');
 		this._token = '';
 	}
-%s
 
+%s
 	/** setToken updates the local value. */
 	setToken(value: string): void {
 		this._token = value

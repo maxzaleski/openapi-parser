@@ -3,7 +3,7 @@ package templates
 import "strings"
 
 var Enum = strings.TrimPrefix(`
-enum %s {
+export enum %s {
 %s
 }`, "\n")
 

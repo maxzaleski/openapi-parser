@@ -5,7 +5,7 @@ import "strings"
 const ObjectProperty = "\treadonly %s%s: %s;"
 
 var Interface = strings.TrimPrefix(`
-interface %s {
+export interface %s {
 %s
 }`, "\n")
 

@@ -6,7 +6,8 @@ import (
 
 	"github.com/iancoleman/strcase"
 
-	"openapi-gen/gen/parser"
+	"openapi-gen/internal/parser"
+
 	"openapi-gen/gen/typescript/constants"
 	"openapi-gen/gen/typescript/templates"
 	"openapi-gen/internal"
@@ -25,7 +26,7 @@ func generateClass(def *parser.Definition) string {
 	// Class constructor properties.
 	mappedConstructorProps := make([]string, 0, len(def.Properties))
 	for _, prop := range internal.SortProperties(def.Properties) {
-		mappedProps = append(mappedProps, generateObjectProperty(prop))
+		mappedProps = append(mappedProps, generateObjectProperty("", prop))
 		mappedConstructorProps = append(mappedConstructorProps, generateClassConstructorProperty(def.Key, prop))
 	}
 	// Class methods if any.
@@ -43,33 +44,11 @@ func generateClass(def *parser.Definition) string {
 	)
 }
 
-// generateClassResponseBody generates a typescript response body class for the given definition.
-func generateClassResponseBody(def *parser.Definition) string {
-	template := templates.ResponseBody
-
-	className := def.Key
-	classExtends := "GenericResponse"
-	if len(def.Properties) == 2 {
-		if strings.Contains(strings.ToLower(def.Key), "error") {
-			classExtends = "GenericResponse"
-			template = templates.ResponseErrorBody
-		} else {
-			className += "<T>"
-			classExtends = "SuccessResponse<T>"
-		}
-	}
-
-	return fmt.Sprintf(template,
-		className,
-		classExtends,
-	)
-}
-
 // generateClassRequest generates a typescript request class for the given definition.
 func generateClassRequest(path *parser.Path) string {
 	mappedProps := make([]string, 0, len(path.Parameters))
 	for _, prop := range internal.SortProperties(path.Parameters) {
-		mappedProps = append(mappedProps, generateObjectProperty(prop))
+		mappedProps = append(mappedProps, generateObjectProperty("m.", prop))
 	}
 
 	return fmt.Sprintf(templates.Request,
@@ -84,7 +63,7 @@ func generateClassResponse(def *parser.Definition) string {
 	extends := def.Ref
 	if !internal.IsErrorType(def.Key) {
 		if extendsType := def.Returns; extendsType != "" {
-			extends += "<" + extendsType + ">"
+			extends += "<m." + extendsType + ">"
 		}
 	}
 	// Class constructor's super call arguments.
@@ -97,6 +76,32 @@ func generateClassResponse(def *parser.Definition) string {
 	)
 }
 
+// generateClassResponseBody generates a typescript response body class for the given definition.
+func generateClassResponseBody(def *parser.Definition) string {
+	template := templates.ResponseBody
+
+	className := def.Key
+	classExtends := "GenericResponse"
+	if len(def.Properties) >= 2 {
+		if strings.Contains(strings.ToLower(def.Key), "error") {
+			classExtends = "GenericResponse"
+			template = templates.ResponseErrorBody
+		} else {
+			className += "<T>"
+			if internal.IsPaginatedResponse(def.Key) {
+				classExtends = "PaginatedResponse<T>"
+			} else {
+				classExtends = "SuccessResponse<T>"
+			}
+		}
+	}
+
+	return fmt.Sprintf(template,
+		className,
+		classExtends,
+	)
+}
+
 // setConstructorSuperArgs returns the super call arguments based on the given definition.
 func setConstructorSuperArgs(def *parser.Definition) string {
 	switch {
@@ -104,10 +109,10 @@ func setConstructorSuperArgs(def *parser.Definition) string {
 		return constants.ConstructorSuperRegisterOrganisation
 	case def.Returns != "":
 		if strings.HasSuffix(def.Returns, "[]") {
-			return fmt.Sprintf("{ ...data, data: data.data.map(e => new %s(e))}",
+			return fmt.Sprintf("{ ...data, data: data.data.map(e => new m.%s(e))}",
 				strings.TrimSuffix(def.Returns, "[]"))
 		} else {
-			return fmt.Sprintf("{ ...data, data: new %s(data.data)}", def.Returns)
+			return fmt.Sprintf("{ ...data, data: new m.%s(data.data)}", def.Returns)
 		}
 	default:
 		return "data"
@@ -115,7 +120,7 @@ func setConstructorSuperArgs(def *parser.Definition) string {
 }
 
 // generateObjectProperty generates a typescript object property from the given definition.
-func generateObjectProperty(prop *parser.DefinitionProperty) string {
+func generateObjectProperty(prefix string, prop *parser.DefinitionProperty) string {
 	template := templates.ObjectProperty
 
 	// Property's description.
@@ -132,14 +137,22 @@ func generateObjectProperty(prop *parser.DefinitionProperty) string {
 	}
 	// Property's type.
 	propType := prop.Type
-	if propRef := prop.Ref; propRef != "" {
-		propType = propRef
-	} else {
-		switch propType {
+	switch {
+	// Account for enums imported from './enums'.
+	case !internal.HasConstructor(prop.Ref):
+		propType = "e." + prop.Ref
+	case prop.Ref != "" && prop.Type != "array":
+		propType = prefix + prop.Ref
+	default:
+		switch prop.Type {
 		case "integer":
 			propType = "number"
 		case "array":
-			propType += "[]"
+			if internal.IsBasicType(prop.Ref) {
+				propType = prop.Ref + "[]"
+			} else {
+				propType = prefix + prop.Ref + "[]"
+			}
 		}
 	}
 
@@ -174,14 +187,14 @@ func generateObjectPropertyMissingComment(key string) string {
 // definition.
 func generateClassConstructorProperty(key string, prop *parser.DefinitionProperty) (result string) {
 	switch {
-	case strings.HasSuffix(prop.Key, "_at") || strings.Contains(key, "ListMembers"):
+	case strings.HasSuffix(prop.Key, "_at") && !strings.Contains(key, "ListMembers"):
 		return fmt.Sprintf("\t\tthis.%[1]s = new ExtendedDate(data.%[1]s);", prop.Key)
 	case prop.Key == "country_code":
 		return fmt.Sprintf("\t\tthis.%[1]s = new Country(data.%[1]s);", prop.Key, prop.Type)
 	case internal.HasConstructor(prop.Ref) && prop.Type == "":
 		return fmt.Sprintf("\t\tthis.%[1]s = new %s(data.%[1]s);", prop.Key, prop.Ref)
 	case !internal.HasConstructor(prop.Ref) && prop.Type == "":
-		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s as %[2]s;", prop.Key, prop.Ref)
+		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s as e.%[2]s;", prop.Key, prop.Ref)
 	case prop.Ref != "" && prop.Type == "array":
 		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s.map(item => new %[2]s(item));", prop.Key, prop.Ref)
 	case prop.Ref != "":

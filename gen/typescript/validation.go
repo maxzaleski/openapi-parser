@@ -6,29 +6,32 @@ import (
 
 	"github.com/iancoleman/strcase"
 
-	"openapi-gen/gen/parser"
+	"openapi-gen/internal/parser"
+
 	"openapi-gen/gen/typescript/templates"
 	"openapi-gen/internal"
 )
 
 // generateRequestClassValidationObject generates a request class' validation object from the
 // given definition.
-func generateRequestClassValidationObject(def *parser.Path) string {
-	mappedProps := make([]string, 0, len(def.Parameters))
-	for _, prop := range internal.SortProperties(def.Parameters) {
-		mappedProps = append(mappedProps, generateRequestValidationProperty("\t", prop))
+func generateRequestClassValidationObject(key string, props []*parser.DefinitionProperty) string {
+	mappedObjects := make([]string, 0, len(props))
+	for _, prop := range internal.SortProperties(props) {
+		mappedObjects = append(mappedObjects, generateRequestValidationProperty("\t", prop))
 	}
 
 	return fmt.Sprintf(templates.RequestValidation,
-		strcase.ToCamel(def.Operation),
-		strings.Join(mappedProps, "\n"),
+		strcase.ToCamel(key),
+		strings.Join(mappedObjects, "\n"),
 	)
 }
 
 // generateRequestValidationProperty generates a validation object property from the given
 // definition.
 func generateRequestValidationProperty(initialIndent string, prop *parser.DefinitionProperty) string {
-	// TODO: nested objects like Address.
+	// TODO(MZ): nested objects like Address.
+	// TODO(MZ): dependency-bound validation such as HostMemberRelationship.
+	// https://stackoverflow.com/questions/61962784/yup-nested-schema-validation
 
 	result := initialIndent + strcase.ToLowerCamel(prop.Key)
 	indent := "\n\t" + initialIndent

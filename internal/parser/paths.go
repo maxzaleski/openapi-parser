@@ -4,10 +4,11 @@ import "strings"
 
 // Path represents an API path.
 type Path struct {
-	Key        string
-	HTTPVerb   string
-	Parameters []*DefinitionProperty
-	Operation  string
+	Key         string
+	Description string
+	HTTPVerb    string
+	Parameters  []*DefinitionProperty
+	Operation   string
 }
 
 // parseIntoPaths maps swagger definitions into a new instance of `map[string]*Path`,
@@ -21,6 +22,9 @@ func parseIntoPaths(rawDefs map[string]interface{}) map[string]*Path {
 			for verbKey, verbVal := range vTyped {
 				path.HTTPVerb = verbKey.(string)
 				if verbValTyped, ok := verbVal.(map[interface{}]interface{}); ok {
+					if desc := verbValTyped["summary"]; desc != nil {
+						path.Description = desc.(string)
+					}
 					if parameters := verbValTyped["parameters"]; parameters != nil {
 						if parametersTyped, ok := parameters.([]interface{}); ok {
 							params := make([]*DefinitionProperty, 0)
