@@ -3,7 +3,6 @@ package parser
 import (
 	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/iancoleman/strcase"
 )
@@ -81,7 +80,7 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 			Key:  k,
 			Type: "object",
 		}
-		vTyped := v.(map[interface{}]interface{})
+		vTyped := v.(Record)
 		if val := vTyped["title"]; val != nil {
 			def.Description = val.(string)
 		}
@@ -97,7 +96,7 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 		}
 		if properties := vTyped["properties"]; properties != nil {
 			props := make([]*DefinitionProperty, 0)
-			if valTyped, ok := properties.(map[interface{}]interface{}); ok {
+			if valTyped, ok := properties.(Record); ok {
 				for propName, propVal := range valTyped {
 					prop := &DefinitionProperty{
 						Key:        propName.(string),
@@ -107,7 +106,7 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 					if _, ok := required[propName.(string)]; ok {
 						prop.Required = true
 					}
-					if propValTyped, ok := propVal.(map[interface{}]interface{}); ok {
+					if propValTyped, ok := propVal.(Record); ok {
 						// Properties.
 						if propType := propValTyped["type"]; propType != nil {
 							prop.Type = propType.(string)
@@ -120,20 +119,20 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 						}
 						if propRef := propValTyped["$ref"]; propRef != nil {
 							// Strip away spec's prefix.
-							prop.Ref = strings.Replace(propRef.(string), "#/definitions/", "", 1)
+							prop.Type = toRef(propRef.(string))
 						}
 						if propFormat := propValTyped["format"]; propFormat != nil {
 							prop.Format = propFormat.(string)
 						}
 						if propSchema := propValTyped["schema"]; propSchema != nil {
-							if propSchemaTyped, ok := propSchema.(map[interface{}]interface{}); ok {
+							if propSchemaTyped, ok := propSchema.(Record); ok {
 								prop.Type = propSchemaTyped["type"].(string)
 							}
 						}
 						// Slices will have their own reference.
 						if propItems := propValTyped["items"]; propItems != nil {
-							if propItemsTyped, ok := propItems.(map[interface{}]interface{}); ok {
-								prop.Ref = strings.Replace(propItemsTyped["$ref"].(string), "#/definitions/", "", 1)
+							if propItemsTyped, ok := propItems.(Record); ok {
+								prop.Ref = toRef(propItemsTyped["$ref"].(string))
 							}
 						}
 						// Enumerations should be extracted into their own definitions,

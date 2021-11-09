@@ -1,7 +1,5 @@
 package parser
 
-import "strings"
-
 // Path represents an API path.
 type Path struct {
 	Key         string
@@ -18,10 +16,10 @@ func parseIntoPaths(rawDefs map[string]interface{}) map[string]*Path {
 		path := &Path{
 			Key: k,
 		}
-		if vTyped, ok := v.(map[interface{}]interface{}); ok {
+		if vTyped, ok := v.(Record); ok {
 			for verbKey, verbVal := range vTyped {
 				path.HTTPVerb = verbKey.(string)
-				if verbValTyped, ok := verbVal.(map[interface{}]interface{}); ok {
+				if verbValTyped, ok := verbVal.(Record); ok {
 					if desc := verbValTyped["summary"]; desc != nil {
 						path.Description = desc.(string)
 					}
@@ -32,7 +30,7 @@ func parseIntoPaths(rawDefs map[string]interface{}) map[string]*Path {
 								param := &DefinitionProperty{
 									Validation: &DefinitionPropertyValidation{},
 								}
-								if paramValTyped, ok := paramVal.(map[interface{}]interface{}); ok {
+								if paramValTyped, ok := paramVal.(Record); ok {
 									// Properties.
 									if paramName := paramValTyped["name"]; paramName != nil {
 										param.Key = paramName.(string)
@@ -53,20 +51,20 @@ func parseIntoPaths(rawDefs map[string]interface{}) map[string]*Path {
 										param.Format = paramFormat.(string)
 									}
 									if paramSchema := paramValTyped["schema"]; paramSchema != nil {
-										if paramSchemaTyped, ok := paramSchema.(map[interface{}]interface{}); ok {
+										if paramSchemaTyped, ok := paramSchema.(Record); ok {
 											if paramRef := paramSchemaTyped["$ref"]; paramRef != nil {
-												param.Ref = strings.Replace(paramRef.(string), "#/definitions/", "", 1)
+												param.Ref = toRef(paramRef.(string))
 											}
 											if paramType := paramSchemaTyped["type"]; paramType != nil {
 												param.Type = paramType.(string)
 											}
 											if paramType := paramSchemaTyped["items"]; paramType != nil {
-												if paramTypeTyped, ok := paramType.(map[interface{}]interface{}); ok {
+												if paramTypeTyped, ok := paramType.(Record); ok {
 													if paramSliceRef := paramTypeTyped["type"]; paramSliceRef != nil {
 														param.Ref = paramSliceRef.(string)
 													}
 													if paramSliceRef := paramTypeTyped["$ref"]; paramSliceRef != nil {
-														param.Ref = strings.Replace(paramSliceRef.(string), "#/definitions/", "", 1)
+														param.Ref = toRef(paramSliceRef.(string))
 													}
 												}
 											}

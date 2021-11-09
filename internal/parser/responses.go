@@ -2,14 +2,11 @@ package parser
 
 import (
 	"regexp"
-	"strings"
 
 	"github.com/iancoleman/strcase"
 )
 
 var entityRegex = regexp.MustCompile(`([aA-zZ]+[a-z])(Create|Get|List|Update)([aA-zZ]+)?Response`)
-
-type Record = map[interface{}]interface{}
 
 // parseIntoResponses maps swagger definitions into a new instance of `map[string]*Definition`,
 func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Definition {
@@ -25,31 +22,31 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Definition {
 			Properties: make([]*DefinitionProperty, 0),
 		}
 		if vTyped, ok := v.(Record); ok {
-			matched := entityRegex.FindStringSubmatch(resp.Key)
-			if len(matched) > 0 {
-				switch matched[2] {
+			matches := entityRegex.FindStringSubmatch(resp.Key)
+			if len(matches) > 0 {
+				switch matches[2] {
 				case "Create":
-					if t := matched[1]; t != "GroupMembers" && t != "AccommodationResidents" {
-						resp.Returns = matched[1]
+					if t := matches[1]; t != "GroupMembers" && t != "AccommodationResidents" {
+						resp.Returns = matches[1]
 					}
 				case "Get":
-					resp.Returns = matched[1] + matched[3]
+					resp.Returns = matches[1] + matches[3]
 				case "List":
-					resp.Returns = matched[1][:len(matched[1])-1] + "[]"
+					resp.Returns = matches[1][:len(matches[1])-1] + "[]"
 				case "Update":
-					if matched[3] == "Whereabouts" {
+					if matches[3] == "Whereabouts" {
 						resp.Returns = "MemberWhereabouts"
 					}
 				}
 			}
 			if headers := vTyped["headers"]; headers != nil {
-				if headersTyped, ok := headers.(map[interface{}]interface{}); ok {
+				if headersTyped, ok := headers.(Record); ok {
 					// Keys which aren't part of the extended definition.
 					for propKey, propVal := range headersTyped {
 						prop := &DefinitionProperty{
 							Key: propKey.(string),
 						}
-						if propValTyped, ok := propVal.(map[interface{}]interface{}); ok {
+						if propValTyped, ok := propVal.(Record); ok {
 							if propType := propValTyped["type"]; propType != nil {
 								prop.Type = propType.(string)
 							}
@@ -61,9 +58,9 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Definition {
 							}
 						}
 						if schema := vTyped["schema"]; schema != nil {
-							if schemaTyped, ok := schema.(map[interface{}]interface{}); ok {
+							if schemaTyped, ok := schema.(Record); ok {
 								if propRef := schemaTyped["$ref"]; propRef != nil {
-									prop.Ref = strings.Replace(propRef.(string), "#/definitions/", "", 1)
+									prop.Ref = toRef(propRef.(string))
 								}
 							}
 						}
@@ -74,7 +71,7 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Definition {
 			if schema := vTyped["schema"]; schema != nil {
 				if schemaTyped, ok := schema.(Record); ok {
 					if propRef := schemaTyped["$ref"]; propRef != nil {
-						resp.Ref = strings.Replace(propRef.(string), "#/definitions/", "", 1)
+						resp.Ref = toRef(propRef.(string))
 					}
 				}
 			}
