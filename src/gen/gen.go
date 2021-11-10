@@ -3,16 +3,15 @@ package gen
 import (
 	"os"
 
+	"openapi-gen/gen/typescript"
 	"openapi-gen/internal/output"
 	"openapi-gen/internal/parser"
-
-	"openapi-gen/gen/typescript"
 	"openapi-gen/internal/slog"
 )
 
 const outDir = "tmp/"
 
-// New generates codes for the given OpenAPI spec based on the given language extension.
+// New generates code for the given OpenAPI spec based on the given language extension.
 func New(b []byte, extn Extension) error {
 	logger := slog.NewLogger("[gen]")
 

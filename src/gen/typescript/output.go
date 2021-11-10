@@ -5,12 +5,11 @@ import (
 	"strings"
 	"sync"
 
-	"openapi-gen/internal/output"
-	"openapi-gen/internal/parser"
-
 	"openapi-gen/gen/typescript/constants"
 	"openapi-gen/gen/typescript/templates"
 	"openapi-gen/internal"
+	"openapi-gen/internal/output"
+	"openapi-gen/internal/parser"
 	"openapi-gen/internal/slog"
 )
 

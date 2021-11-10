@@ -26,8 +26,3 @@ export class %s extends %s {
 		this.error = new m.APIError(data.error);
   }
 }`, "\n")
-
-var ErrorResponse = strings.TrimPrefix(`
-export interface %s extends %s {
-%s
-}`, "\n")

@@ -8,16 +8,19 @@ import (
 )
 
 func main() {
-	if err := main_(); err != nil {
+	if err := exec(); err != nil {
 		os.Exit(1)
 	}
 }
 
-func main_() error {
+func exec() error {
 	specFile, err := os.Open("./spec.yml")
 	if err != nil {
 		return err
 	}
+	defer func() {
+		_ = specFile.Close()
+	}()
 	b, err := io.ReadAll(specFile)
 	if err != nil {
 		return err
