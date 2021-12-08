@@ -12,7 +12,7 @@ func OverrideDefinition(def *parser.Definition) *parser.Definition {
 	switch def.Key {
 	case "Role":
 		def.Key = "MemberRole"
-		def.Description = "Role represents a member role."
+		def.Description = "MemberRole represents a member role."
 	case "EntityType":
 		def.Key = "ViewEntityType"
 		def.Description = "ViewEntityType represents a view entity type."
@@ -22,6 +22,8 @@ func OverrideDefinition(def *parser.Definition) *parser.Definition {
 		def.Description = "ErrorType represents an error type."
 	case "RelationshipWithMember":
 		def.Description = "RelationshipWithMember represents a host-member relationship."
+	case "Colour":
+		def.Description = "Colour represents a recognised colour."
 	}
 	// Override properties.
 	for _, prop := range def.Properties {
@@ -65,6 +67,17 @@ func overrideDefinitionProperty(pKey string, prop *parser.DefinitionProperty) {
 		switch prop.Type {
 		case "ImageFallback":
 			prop.Type = "Colour"
+		}
+	case prop.Key == "changed_by_self":
+		prop.Description = "Whether the whereabouts were updated by the current user."
+	case prop.Key == "address":
+		switch {
+		case strings.Contains(pKey, "Accommodation"):
+			prop.Description = "The accommodation's address."
+		case strings.Contains(pKey, "Organisation"):
+			prop.Description = "The organisation's address."
+		case strings.Contains(pKey, "Household"):
+			prop.Description = "The household's address."
 		}
 	case prop.Key == "country_code" && IsStandardType(pKey):
 		prop.Key = "country"

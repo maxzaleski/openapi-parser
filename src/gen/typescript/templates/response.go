@@ -10,14 +10,14 @@ export class %s extends %s {
 }`, "\n")
 
 var ResponseBody = strings.TrimPrefix(`
-export class %s extends %s {
+class %s extends %s {
   constructor(data: any) {
     super(data);
   }
 }`, "\n")
 
 var ResponseErrorBody = strings.TrimPrefix(`
-export class %s extends %s {
+class %s extends %s {
 	/** The error. */
 	readonly error: m.APIError;
 

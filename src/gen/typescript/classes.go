@@ -109,7 +109,7 @@ func setConstructorSuperArgs(def *parser.Definition) string {
 		return constants.ConstructorSuperRegisterOrganisation
 	case def.Returns != "":
 		if strings.HasSuffix(def.Returns, "[]") {
-			return fmt.Sprintf("{ ...data, data: data.data.map(e => new m.%s(e))}",
+			return fmt.Sprintf("{ ...data, data: data.data.map((e: any) => new m.%s(e))}",
 				strings.TrimSuffix(def.Returns, "[]"))
 		} else {
 			return fmt.Sprintf("{ ...data, data: new m.%s(data.data)}", def.Returns)
@@ -196,7 +196,7 @@ func generateClassConstructorProperty(key string, prop *parser.DefinitionPropert
 	case !internal.HasConstructor(prop.Ref) && prop.Type == "":
 		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s as e.%[2]s;", prop.Key, prop.Ref)
 	case prop.Ref != "" && prop.Type == "array":
-		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s.map(item => new %[2]s(item));", prop.Key, prop.Ref)
+		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s.map((e: any) => new %[2]s(e));", prop.Key, prop.Ref)
 	case prop.Ref != "":
 		return fmt.Sprintf("\t\tthis.%[1]s = new %[2]s(data.%[1]s);", prop.Key, prop.Ref)
 	default:

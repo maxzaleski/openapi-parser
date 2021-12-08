@@ -21,7 +21,7 @@ type Worker = func(wg *sync.WaitGroup, jobs <-chan Job, m FileMap)
 func New(jobs []Job, worker Worker, m FileMap) {
 	wg := &sync.WaitGroup{}
 
-	jobsChan := make(chan Job, 8)
+	jobsChan := make(chan Job, len(jobs))
 	for i := 0; i < 3; i++ {
 		wg.Add(1)
 		go worker(wg, jobsChan, m)

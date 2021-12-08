@@ -4,7 +4,7 @@ import "strings"
 
 var APIClient = strings.TrimPrefix(`
 import { RestClient } from './rest-client';
-import * as defs from './definitions';
+import * as d from './definitions';
 
 /** APIClient represents the BoardingHub API interface. */
 class APIClient {
@@ -19,6 +19,7 @@ class APIClient {
 	}
 
 %s
+
 	/** setToken updates the local value. */
 	setToken(value: string): void {
 		this._token = value
@@ -32,6 +33,6 @@ export const BoardingHubAPI = new APIClient();
 var APIClientMethod = strings.TrimPrefix(`
 	async %s(%s): Promise<%s> {
 		const path = %s;
-	  return await this._client.%s<%s>(%s)
-	}
-`, "\n")
+	    const respData = await this._client.%s<%s>(%s);
+		return new %[3]s(respData);
+	}`, "\n")

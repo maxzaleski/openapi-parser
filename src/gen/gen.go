@@ -9,8 +9,6 @@ import (
 	"openapi-gen/internal/slog"
 )
 
-const outDir = "tmp/"
-
 // New generates code for the given OpenAPI spec based on the given language extension.
 func New(b []byte, extn Extension) error {
 	logger := slog.NewLogger("[gen]")
@@ -22,6 +20,7 @@ func New(b []byte, extn Extension) error {
 	}
 
 	// Create directory if it doesn't exist.
+	outDir := getAppropriateDestination(extn)
 	if err = os.MkdirAll(outDir, 0755); err != nil {
 		logger.Println("os.MkdirAll:", err)
 		return err

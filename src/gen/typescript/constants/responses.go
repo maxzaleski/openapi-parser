@@ -41,6 +41,6 @@ export class PaginatedResponse<T> extends SuccessResponse<T> {
 
 	constructor(data: any) {
 		super(data);
-		this.pagination = new m.Pagination(data.pagination);
+		this.pagination = new m.Pagination(data.data.pagination);
 	}
 }`, "\n")

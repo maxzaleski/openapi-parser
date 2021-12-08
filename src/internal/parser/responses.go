@@ -33,10 +33,6 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Definition {
 					resp.Returns = matches[1] + matches[3]
 				case "List":
 					resp.Returns = matches[1][:len(matches[1])-1] + "[]"
-				case "Update":
-					if matches[3] == "Whereabouts" {
-						resp.Returns = "MemberWhereabouts"
-					}
 				}
 			}
 			if headers := vTyped["headers"]; headers != nil {
@@ -79,46 +75,4 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Definition {
 		respMap[resp.Key] = resp
 	}
 	return respMap
-}
-
-// isExtendedInstance validates whether the response is extended from a parent type.
-//
-// If it is found to be an extension, will return the definition's key.
-// Always returns a slice of unclassified properties.
-func isExtendedInstance(key string, rawProps Record) (string, []string) {
-	// Map the incoming map's keys into a new slice.
-	keys := make([]string, 0, len(rawProps))
-	for k := range rawProps {
-		keys = append(keys, k.(string))
-	}
-	// Exit early if the type is in fact `SuccessResponse`.
-	if key == "SuccessResponse" {
-		return "", keys
-	}
-	// Keys to be added to the response's properties.
-	remainingKeys := make([]string, 0, len(rawProps))
-
-	// Props of `SuccessResponse` which extends `GenericResponse`.
-	var (
-		hasOK   bool
-		hasData bool
-	)
-	for _, k := range keys {
-		switch k {
-		case "ok":
-			hasOK = true
-		case "data":
-			hasData = true
-		default:
-			remainingKeys = append(remainingKeys, k)
-		}
-	}
-
-	var ref string
-	if hasOK && hasData {
-		ref = "SuccessResponse"
-	} else if hasOK {
-		ref = "GenericResponse"
-	}
-	return ref, remainingKeys
 }

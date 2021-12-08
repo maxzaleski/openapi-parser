@@ -31,12 +31,12 @@ func FilterIntoValidationObjectMap(m map[string]*parser.Path) map[string][]*pars
 		}
 
 		for _, param := range v.Parameters {
-			if param.In != "body" {
+			if param.In == "path" {
 				continue
 			}
 			validationEligibleProps := make([]*parser.DefinitionProperty, 0, len(v.Parameters))
 			for _, param = range v.Parameters {
-				if param.In != "body" {
+				if param.In == "path" {
 					continue
 				}
 				if IsPropSuitableForValidation(param.Type) {

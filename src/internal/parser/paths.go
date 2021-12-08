@@ -36,7 +36,7 @@ func parseIntoPaths(rawDefs map[string]interface{}) map[string]*Path {
 										param.Key = paramName.(string)
 									}
 									if paramDesc := paramValTyped["description"]; paramDesc != nil {
-										param.Description = paramDesc.(string)
+										param.Description = extractDescription(paramDesc.(string))
 									}
 									if paramIn := paramValTyped["in"]; paramIn != nil {
 										param.In = paramIn.(string)
@@ -50,6 +50,19 @@ func parseIntoPaths(rawDefs map[string]interface{}) map[string]*Path {
 									if paramFormat := paramValTyped["format"]; paramFormat != nil {
 										param.Format = paramFormat.(string)
 									}
+									if paramRef := paramValTyped["$ref"]; paramRef != nil {
+										param.Ref = toRef(paramRef.(string))
+									}
+									if paramItemsRef := paramValTyped["items"]; paramItemsRef != nil {
+										if paramItemsRefTyped, ok := paramItemsRef.(Record); ok {
+											if paramSliceRef := paramItemsRefTyped["type"]; paramSliceRef != nil {
+												param.Ref = paramSliceRef.(string)
+											}
+											if paramSliceRef := paramItemsRefTyped["$ref"]; paramSliceRef != nil {
+												param.Ref = toRef(paramSliceRef.(string))
+											}
+										}
+									}
 									if paramSchema := paramValTyped["schema"]; paramSchema != nil {
 										if paramSchemaTyped, ok := paramSchema.(Record); ok {
 											if paramRef := paramSchemaTyped["$ref"]; paramRef != nil {
@@ -57,16 +70,6 @@ func parseIntoPaths(rawDefs map[string]interface{}) map[string]*Path {
 											}
 											if paramType := paramSchemaTyped["type"]; paramType != nil {
 												param.Type = paramType.(string)
-											}
-											if paramType := paramSchemaTyped["items"]; paramType != nil {
-												if paramTypeTyped, ok := paramType.(Record); ok {
-													if paramSliceRef := paramTypeTyped["type"]; paramSliceRef != nil {
-														param.Ref = paramSliceRef.(string)
-													}
-													if paramSliceRef := paramTypeTyped["$ref"]; paramSliceRef != nil {
-														param.Ref = toRef(paramSliceRef.(string))
-													}
-												}
 											}
 										}
 									}

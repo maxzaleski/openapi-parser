@@ -49,27 +49,27 @@ func generateAPIMethod(def *parser.Path) string {
 		if routePathParam != "" {
 			methodArgs += ", "
 		}
-		methodArgs += "payload: deoutput." + operationAsCamel + "Request"
+		methodArgs += "payload: d." + operationAsCamel + "Request"
 	}
 
-	// Method's rest client call.
+	// Method's REST call.
 	methodRestFunction := def.HTTPVerb
 	if methodRestFunction == "list" {
 		methodRestFunction = "get"
 	}
 	// Assign the rest client method's generics.
-	methodRestFunctionGenerics := "void, deoutput." + operationAsCamel + "Response"
+	methodRestFunctionGenerics := "d." + operationAsCamel + "Response"
 	// Assign the rest client method's arguments.
 	methodRestFunctionArgs := "path"
 	if flagPayload {
 		methodRestFunctionArgs += ", payload"
-		methodRestFunctionGenerics = fmt.Sprintf("deoutput.%[1]sRequest, deoutput.%[1]sResponse", operationAsCamel)
+		methodRestFunctionGenerics = fmt.Sprintf("d.%sRequest", operationAsCamel)
 	}
 
 	return fmt.Sprintf(template,
 		def.Operation,
 		methodArgs,
-		"deoutput."+operationAsCamel+"Response",
+		"d."+operationAsCamel+"Response",
 		methodPath,
 		methodRestFunction,
 		methodRestFunctionGenerics,

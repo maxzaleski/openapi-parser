@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"regexp"
 	"strconv"
 
 	"github.com/iancoleman/strcase"
@@ -69,8 +68,6 @@ type DefinitionPropertyValidation struct {
 	MinItems int
 }
 
-var descriptionRegex = regexp.MustCompile(`^(.*\.)`)
-
 // parseIntoDefinitions maps swagger definitions into a new instance of `map[string]*Definition`,
 func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition {
 	defMap := make(map[string]*Definition)
@@ -112,10 +109,7 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 							prop.Type = propType.(string)
 						}
 						if propDesc := propValTyped["description"]; propDesc != nil {
-							matches := descriptionRegex.FindStringSubmatch(propDesc.(string))
-							if len(matches) >= 2 {
-								prop.Description = matches[1]
-							}
+							prop.Description = extractDescription(propDesc.(string))
 						}
 						if propRef := propValTyped["$ref"]; propRef != nil {
 							// Strip away spec's prefix.

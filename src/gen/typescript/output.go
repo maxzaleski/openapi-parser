@@ -24,7 +24,7 @@ func generateOutput(doc *parser.Document, m output.FileMap, logger slog.Logger) 
 		{
 			OperationID: "rest-client",
 			Generator:   "generateRESTClient",
-			Args:        []interface{}{doc.Hosts, doc.BasePath, logger},
+			Args:        []interface{}{doc.Host, doc.BasePath, logger},
 		},
 		{
 			OperationID: "api-client",
@@ -69,12 +69,12 @@ func outputWorker(
 		var file *output.File
 		switch job.OperationID {
 		case "rest-client":
-			hosts := job.Args[0].([]string)
+			host := job.Args[0].(string)
 			basePath := job.Args[1].(string)
 			logger := job.Args[2].(slog.Logger)
 			file = &output.File{
 				Name: "rest-client",
-				Body: generateRestClient(hosts, basePath, logger),
+				Body: generateRestClient(host, basePath, logger),
 			}
 		case "api-client":
 			paths := job.Args[0].(map[string]*parser.Path)
@@ -237,8 +237,8 @@ func generateRequestValidationObjects(
 }
 
 // generateRestClient generates the rest client code.
-func generateRestClient(hosts []string, basePath string, logger slog.Logger) string {
-	return fmt.Sprintf(templates.RestClient, hosts[1], hosts[0], basePath)
+func generateRestClient(host, basePath string, _ slog.Logger) string {
+	return fmt.Sprintf(templates.RestClient, host, basePath)
 }
 
 // generateAPIClient generates the API client code for the given spec.
@@ -259,5 +259,5 @@ func generateAPIClient(defs map[string]*parser.Path, logger slog.Logger) string 
 	}
 	logger.Printf("[generateAPIClient] received %d :: mapped %d", len(defs), len(mappedMethods))
 
-	return fmt.Sprintf(templates.APIClient, strings.Join(mappedMethods, "\n"))
+	return fmt.Sprintf(templates.APIClient, strings.Join(mappedMethods, "\n\n"))
 }
