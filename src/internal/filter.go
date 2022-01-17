@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"openapi-gen/internal/parser"
+	"openapi-generator/internal/parser"
 )
 
 // FilterIntoModelsAndEnumKeys filters the given map into 2 slices of keys.
@@ -22,7 +22,7 @@ func FilterIntoModelsAndEnumKeys(m map[string]*parser.Definition) ([]string, []s
 
 // FilterIntoValidationObjectMap filters the given map of paths into a map of definition
 // properties suitable for validation.
-func FilterIntoValidationObjectMap(m map[string]*parser.Path) map[string][]*parser.DefinitionProperty {
+func FilterIntoValidationObjectMap(defs map[string]*parser.Definition, m map[string]*parser.Path) map[string][]*parser.DefinitionProperty {
 	validations := make(map[string][]*parser.DefinitionProperty, 0)
 	for _, v := range m {
 		// Check if the path is suitable.
@@ -34,8 +34,10 @@ func FilterIntoValidationObjectMap(m map[string]*parser.Path) map[string][]*pars
 			if param.In == "path" {
 				continue
 			}
+			// param.Name = Body i.e., the request body.
+			body := defs[param.Ref]
 			validationEligibleProps := make([]*parser.DefinitionProperty, 0, len(v.Parameters))
-			for _, param = range v.Parameters {
+			for _, param = range body.Properties {
 				if param.In == "path" {
 					continue
 				}

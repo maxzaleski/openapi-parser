@@ -6,11 +6,11 @@ import (
 
 	"github.com/iancoleman/strcase"
 
-	"openapi-gen/internal/parser"
+	"openapi-generator/internal/parser"
 
-	"openapi-gen/gen/typescript/constants"
-	"openapi-gen/gen/typescript/templates"
-	"openapi-gen/internal"
+	"openapi-generator/gen/typescript/constants"
+	"openapi-generator/gen/typescript/templates"
+	"openapi-generator/internal"
 )
 
 // generateClass generates a typescript class from the given definition.
@@ -26,7 +26,7 @@ func generateClass(def *parser.Definition) string {
 	// Class constructor properties.
 	mappedConstructorProps := make([]string, 0, len(def.Properties))
 	for _, prop := range internal.SortProperties(def.Properties) {
-		mappedProps = append(mappedProps, generateObjectProperty("", prop))
+		mappedProps = append(mappedProps, generateObjectProperty(def.Key, "", prop))
 		mappedConstructorProps = append(mappedConstructorProps, generateClassConstructorProperty(def.Key, prop))
 	}
 	// Class methods if any.
@@ -46,14 +46,15 @@ func generateClass(def *parser.Definition) string {
 
 // generateClassRequest generates a typescript request class for the given definition.
 func generateClassRequest(path *parser.Path) string {
-	mappedProps := make([]string, 0, len(path.Parameters))
+	extends := ""
 	for _, prop := range internal.SortProperties(path.Parameters) {
-		mappedProps = append(mappedProps, generateObjectProperty("m.", prop))
+		if prop.Key == "Body" {
+			extends = " extends " + strcase.ToLowerCamel(prop.Ref)
+		}
 	}
-
 	return fmt.Sprintf(templates.Request,
 		strcase.ToCamel(path.Operation),
-		strings.Join(mappedProps, "\n"),
+		extends,
 	)
 }
 
@@ -63,7 +64,11 @@ func generateClassResponse(def *parser.Definition) string {
 	extends := def.Ref
 	if !internal.IsErrorType(def.Key) {
 		if extendsType := def.Returns; extendsType != "" {
-			extends += "<m." + extendsType + ">"
+			if internal.IsPrimitiveType(extendsType) {
+				extends += "<" + extendsType + ">"
+			} else {
+				extends += "<m." + extendsType + ">"
+			}
 		}
 	}
 	// Class constructor's super call arguments.
@@ -107,7 +112,7 @@ func setConstructorSuperArgs(def *parser.Definition) string {
 	switch {
 	case def.Key == "RegisterOrganisationResponse":
 		return constants.ConstructorSuperRegisterOrganisation
-	case def.Returns != "":
+	case def.Returns != "" && !internal.IsPrimitiveType(def.Returns):
 		if strings.HasSuffix(def.Returns, "[]") {
 			return fmt.Sprintf("{ ...data, data: data.data.map((e: any) => new m.%s(e))}",
 				strings.TrimSuffix(def.Returns, "[]"))
@@ -120,13 +125,17 @@ func setConstructorSuperArgs(def *parser.Definition) string {
 }
 
 // generateObjectProperty generates a typescript object property from the given definition.
-func generateObjectProperty(prefix string, prop *parser.DefinitionProperty) string {
+func generateObjectProperty(pKey, prefix string, prop *parser.DefinitionProperty) string {
 	template := templates.ObjectProperty
 
 	// Property's description.
 	//
 	// When a property is referenced, swagger-go will omit the comment.
-	if propDesc := generateObjectPropertyMissingComment(prop.Description); propDesc != "" {
+	propDesc := prop.Description
+	if propDesc == "" {
+		propDesc = generateObjectPropertyMissingComment(prop.Key)
+	}
+	if propDesc != "" {
 		template = toJSDoc("\t", propDesc) + template
 	}
 
@@ -142,13 +151,17 @@ func generateObjectProperty(prefix string, prop *parser.DefinitionProperty) stri
 	case !internal.HasConstructor(prop.Ref):
 		propType = "e." + prop.Ref
 	case prop.Ref != "" && prop.Type != "array":
-		propType = prefix + prop.Ref
+		if strings.Contains(pKey, "DynamicQuery") && strings.Contains(prop.Ref, "DynamicQuery") {
+			propType = prop.Ref
+		} else {
+			propType = prefix + prop.Ref
+		}
 	default:
 		switch prop.Type {
 		case "integer":
 			propType = "number"
 		case "array":
-			if internal.IsBasicType(prop.Ref) {
+			if internal.IsPrimitiveType(prop.Ref) {
 				propType = prop.Ref + "[]"
 			} else {
 				propType = prefix + prop.Ref + "[]"
@@ -174,7 +187,7 @@ func generateObjectPropertyMissingComment(key string) string {
 		return "The entity's address."
 	case "changed_by_self":
 		return "Whether the whereabouts were updated by the member."
-	case "image_fallback":
+	case "image_fallback_colour_idx":
 		return "The image's fallback."
 	case "colour":
 		return "The view's display colour."
@@ -187,7 +200,7 @@ func generateObjectPropertyMissingComment(key string) string {
 // definition.
 func generateClassConstructorProperty(key string, prop *parser.DefinitionProperty) (result string) {
 	switch {
-	case strings.HasSuffix(prop.Key, "_at") && !strings.Contains(key, "ListMembers"):
+	case strings.HasSuffix(prop.Key, "_at") && !strings.Contains(key, "DynamicQuery"):
 		return fmt.Sprintf("\t\tthis.%[1]s = new ExtendedDate(data.%[1]s);", prop.Key)
 	case prop.Key == "country_code":
 		return fmt.Sprintf("\t\tthis.%[1]s = new Country(data.%[1]s);", prop.Key, prop.Type)
@@ -196,7 +209,11 @@ func generateClassConstructorProperty(key string, prop *parser.DefinitionPropert
 	case !internal.HasConstructor(prop.Ref) && prop.Type == "":
 		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s as e.%[2]s;", prop.Key, prop.Ref)
 	case prop.Ref != "" && prop.Type == "array":
-		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s.map((e: any) => new %[2]s(e));", prop.Key, prop.Ref)
+		nullCheck := ""
+		if !prop.Required {
+			nullCheck = "?"
+		}
+		return fmt.Sprintf("\t\tthis.%[1]s = data.%[1]s%[2]s.map((e: any) => new %[3]s(e));", prop.Key, nullCheck, prop.Ref)
 	case prop.Ref != "":
 		return fmt.Sprintf("\t\tthis.%[1]s = new %[2]s(data.%[1]s);", prop.Key, prop.Ref)
 	default:

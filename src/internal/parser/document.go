@@ -8,9 +8,9 @@ type preParsedDocument struct {
 	Meta        *DocumentMeta          `yaml:"info"`
 	Definitions map[string]interface{} `yaml:"definitions"`
 	Paths       map[string]interface{} `yaml:"paths"`
-	Responses   map[string]interface{} `yaml:"responses"`
-	Host        string                 `yaml:"host"`
-	BasePath    string                 `yaml:"basePath"`
+	Responses map[string]interface{} `yaml:"responses"`
+	Host      string                 `yaml:"host"`
+	BasePath  string                 `yaml:"basePath"`
 }
 
 // DocumentMeta represents the document's metadata.

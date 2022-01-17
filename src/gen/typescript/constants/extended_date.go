@@ -9,7 +9,7 @@ export class ExtendedDate extends Date {
 
   constructor(value: string = new Date().toISOString()) {
     const parsed = parseISO(value);
-    super(parsed);
+    super(parsed as any); // Cast to any in order to fix a TS error related to 'VarDate_typekey'.
 
     this._date = parsed;
   }

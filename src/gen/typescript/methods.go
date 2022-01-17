@@ -6,10 +6,10 @@ import (
 
 	"github.com/iancoleman/strcase"
 
-	"openapi-gen/internal/parser"
+	"openapi-generator/internal/parser"
 
-	"openapi-gen/gen/typescript/templates"
-	"openapi-gen/internal"
+	"openapi-generator/gen/typescript/templates"
+	"openapi-generator/internal"
 )
 
 // routePathParamRegex is a regexp that extracts path parameters from a route path.

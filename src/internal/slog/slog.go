@@ -6,7 +6,10 @@ import (
 	"sync"
 )
 
-var debugFlag = os.Getenv("DEBUG") != ""
+var debugFlag = func() bool {
+	flag := os.Getenv("DEBUG")
+	return flag != "" && flag != "0" && flag != "false"
+}()
 
 type (
 	Logger interface {

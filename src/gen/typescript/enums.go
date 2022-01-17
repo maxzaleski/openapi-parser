@@ -6,9 +6,9 @@ import (
 
 	"github.com/iancoleman/strcase"
 
-	"openapi-gen/internal/parser"
+	"openapi-generator/internal/parser"
 
-	"openapi-gen/gen/typescript/templates"
+	"openapi-generator/gen/typescript/templates"
 )
 
 // generateEnum generates a typescript enum from the given definition.

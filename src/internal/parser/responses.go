@@ -6,23 +6,23 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-var entityRegex = regexp.MustCompile(`([aA-zZ]+[a-z])(Create|Get|List|Update)([aA-zZ]+)?Response`)
+var responseRegex = regexp.MustCompile(`([aA-zZ]+[a-z])(Create|Get|List|Update)([aA-zZ]+)?Response`)
+
+var returnsSnapshotTruthMap = map[string]bool{
+	"AccommodationsListResponse": true,
+	"GroupsListResponse":         true,
+}
 
 // parseIntoResponses maps swagger definitions into a new instance of `map[string]*Definition`,
 func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Definition {
 	respMap := make(map[string]*Definition)
 	for k, v := range rawDefs {
-		// This method will be deprecated soon.
-		// TODO(MZ): Re: api refactor - groups.memberships/{member_id}
-		if k == "memberListGroupsResponse" {
-			continue
-		}
 		resp := &Definition{
 			Key:        strcase.ToCamel(k),
 			Properties: make([]*DefinitionProperty, 0),
 		}
 		if vTyped, ok := v.(Record); ok {
-			matches := entityRegex.FindStringSubmatch(resp.Key)
+			matches := responseRegex.FindStringSubmatch(resp.Key)
 			if len(matches) > 0 {
 				switch matches[2] {
 				case "Create":
@@ -32,7 +32,19 @@ func parseIntoResponses(rawDefs map[string]interface{}) map[string]*Definition {
 				case "Get":
 					resp.Returns = matches[1] + matches[3]
 				case "List":
-					resp.Returns = matches[1][:len(matches[1])-1] + "[]"
+					withSnapshot := ""
+					if val, ok := returnsSnapshotTruthMap[resp.Key]; ok && val {
+						withSnapshot = "Snapshot"
+					}
+					returns := matches[1][:len(matches[1])-1]
+					if resp.Key == "MembersListResponse" {
+						returns = "Dynamic" + returns // DynamicMember
+					}
+					resp.Returns = returns + withSnapshot + "[]"
+				case "Update":
+					if matches[1] != "AccommodationResidents" {
+						resp.Returns = "string"
+					}
 				}
 			}
 			if headers := vTyped["headers"]; headers != nil {

@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"strconv"
-
 	"github.com/iancoleman/strcase"
+	"regexp"
+	"strconv"
 )
 
 // Definition represents a type definition.
@@ -20,8 +20,10 @@ type Definition struct {
 	EnumEntries []string
 	// The model's returned entity (response only).
 	Returns string
-	// The model's extended definition's reference key (response only).
+	// The model's extended definition's reference key.
 	Ref string
+	// Whether the model is a dynamic query request.
+	DynamicQuery *DynamicQuery
 }
 
 // DefinitionProperty represents a property of `Definition`.
@@ -42,6 +44,14 @@ type DefinitionProperty struct {
 	Format string
 	// The parameter's destination.
 	In string
+}
+
+// DynamicQuery represents a dynamic query request.
+type DynamicQuery struct {
+	// Whether the model is a dynamic query request.
+	OK bool
+	// The query's characteristics' definition keys.
+	CharacteristicKeys []string
 }
 
 // enumToMap represents an enumeration to map into a `Definition`.
@@ -67,6 +77,14 @@ type DefinitionPropertyValidation struct {
 	// The property's minimum items (slice).
 	MinItems int
 }
+
+var dynamicQueryTruthMath = map[string]bool{
+	"ListMembersRequestBody": true,
+}
+
+var (
+	requestRegex = regexp.MustCompile(`((Create|Get|List|Update)[aA-zZ]+)?Request[Body]?`)
+)
 
 // parseIntoDefinitions maps swagger definitions into a new instance of `map[string]*Definition`,
 func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition {
@@ -113,7 +131,12 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 						}
 						if propRef := propValTyped["$ref"]; propRef != nil {
 							// Strip away spec's prefix.
-							prop.Type = toRef(propRef.(string))
+							prop.Ref = toRef(propRef.(string))
+							// Account for dynamic query characteristics.
+							// Note: ref will always be set with a dynamic query.
+							if dq := def.DynamicQuery; dq != nil && dq.OK {
+								dq.CharacteristicKeys = append(dq.CharacteristicKeys, prop.Ref)
+							}
 						}
 						if propFormat := propValTyped["format"]; propFormat != nil {
 							prop.Format = propFormat.(string)
@@ -126,7 +149,12 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 						// Slices will have their own reference.
 						if propItems := propValTyped["items"]; propItems != nil {
 							if propItemsTyped, ok := propItems.(Record); ok {
-								prop.Ref = toRef(propItemsTyped["$ref"].(string))
+								if propItemsRef := propItemsTyped["$ref"]; propItemsRef != nil {
+									prop.Ref = toRef(propItemsRef.(string))
+								}
+								if propItemsType := propItemsTyped["type"]; propItemsType != nil {
+									prop.Ref = toRef(propItemsType.(string))
+								}
 							}
 						}
 						// Enumerations should be extracted into their own definitions,
@@ -145,7 +173,7 @@ func parseIntoDefinitions(rawDefs map[string]interface{}) map[string]*Definition
 								key := strcase.ToCamel(prop.Key)
 								// Keys equal to "image_fallback" and "colour" will produce the same enum,
 								// but we are only interested in the misc.Colour enum.
-								if key != "ImageFallback" {
+								if key != "ImageFallbackColourIdx" {
 									prop.Type = "" // Reset to follow ref.
 									prop.Ref = key
 									enumsToMap = append(enumsToMap, &enumToMap{

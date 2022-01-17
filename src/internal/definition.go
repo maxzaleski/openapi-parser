@@ -3,7 +3,7 @@ package internal
 import (
 	"strings"
 
-	"openapi-gen/internal/parser"
+	"openapi-generator/internal/parser"
 )
 
 // OverrideDefinition overrides the definition of a type.
@@ -26,8 +26,8 @@ func OverrideDefinition(def *parser.Definition) *parser.Definition {
 		def.Description = "Colour represents a recognised colour."
 	}
 	// Override properties.
-	for _, prop := range def.Properties {
-		overrideDefinitionProperty(def.Key, prop)
+	for i, prop := range def.Properties {
+		def.Properties[i] = overrideDefinitionProperty(def.Key, prop)
 	}
 
 	return def
@@ -54,10 +54,21 @@ func ShakeResponseBodyDefinitions(m map[string]*parser.Definition, out map[strin
 	}
 }
 
+// ShakeRequestBodyDefinitions shakes definitions by moving those with keys containing
+// "RequestBody".
+func ShakeRequestBodyDefinitions(m map[string]*parser.Definition, out map[string]*parser.Definition) {
+	for k, v := range m {
+		if strings.Contains(k, "RequestBody") {
+			out[k] = v
+			delete(m, k)
+		}
+	}
+}
+
 // overrideDefinitionProperty overrides the definition of a property.
-func overrideDefinitionProperty(pKey string, prop *parser.DefinitionProperty) {
+func overrideDefinitionProperty(pKey string, prop *parser.DefinitionProperty) *parser.DefinitionProperty {
 	switch {
-	case pKey == "ListMembersFilterRole" && prop.Key == "value":
+	case strings.Contains(pKey, "DynamicQueryFilterRole") && prop.Key == "value":
 		prop.Ref = "MemberRole"
 	case prop.Ref == "Role":
 		prop.Ref = "MemberRole"
@@ -79,11 +90,16 @@ func overrideDefinitionProperty(pKey string, prop *parser.DefinitionProperty) {
 		case strings.Contains(pKey, "Household"):
 			prop.Description = "The household's address."
 		}
-	case prop.Key == "country_code" && IsStandardType(pKey):
+	case prop.Key == "country_code" && IsStandardModel(pKey):
 		prop.Key = "country"
 		prop.Type = "Country"
-		prop.Description = "The entity's country information."
-	case strings.HasSuffix(prop.Key, "_at") && !strings.Contains(pKey, "ListMembers"):
+		prop.Description = "The entity's country details."
+	case strings.HasSuffix(prop.Key, "_at") && !strings.Contains(pKey, "DynamicQuery"):
 		prop.Type = "ExtendedDate"
+	case prop.Key == "whereabouts":
+		prop.Description = "The member's whereabouts."
+	case prop.Key == "creator":
+		prop.Description = "The entity's creator."
 	}
+	return prop
 }

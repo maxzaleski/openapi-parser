@@ -6,10 +6,10 @@ import (
 
 	"github.com/iancoleman/strcase"
 
-	"openapi-gen/internal/parser"
+	"openapi-generator/internal/parser"
 
-	"openapi-gen/gen/typescript/templates"
-	"openapi-gen/internal"
+	"openapi-generator/gen/typescript/templates"
+	"openapi-generator/internal"
 )
 
 // generateRequestClassValidationObject generates a request class' validation object from the

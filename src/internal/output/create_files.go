@@ -5,12 +5,12 @@ import (
 	"os"
 	"strings"
 
-	"openapi-gen/internal/slog"
+	"openapi-generator/internal/slog"
 )
 
 // CreateFiles will create the given files.
-func CreateFiles(outDir string, files []*File, extn string, logger slog.Logger) error {
-	logger.SetPrefix("[CreateFiles] ")
+func CreateFiles(version, outDir string, files []*File, extn string, logger slog.Logger) error {
+	logger.SetPrefix("[output.CreateFiles] ")
 	logger.Println("Generating output files...")
 
 	// Append path suffix if missing.
@@ -44,7 +44,7 @@ func CreateFiles(outDir string, files []*File, extn string, logger slog.Logger) 
 				return err
 			}
 		}
-		if _, err = f.WriteString(fileToBeCreated.Body); err != nil {
+		if _, err = f.WriteString(getWatermark(version, extn) + fileToBeCreated.Body); err != nil {
 			return err
 		}
 

@@ -3,7 +3,7 @@ package internal
 import (
 	"strings"
 
-	"openapi-gen/internal/parser"
+	"openapi-generator/internal/parser"
 )
 
 // HasConstructor checks whether the given key has a constructor.
@@ -39,7 +39,8 @@ func IsSuitedForAPIMethod(props []*parser.DefinitionProperty) bool {
 	return len(props) > 1 || IsPathParameter(props)
 }
 
-// IsPropSuitableForValidation checks whether the given property is suitable for validation.
+// IsPropSuitableForValidation checks whether the given property is suitable for validation i.e., if the given value
+// corresponds to a non-model type.
 func IsPropSuitableForValidation(t string) bool {
 	switch t {
 	case "string", "integer", "array":
@@ -49,8 +50,8 @@ func IsPropSuitableForValidation(t string) bool {
 	}
 }
 
-// IsBasicType checks whether the given type is a basic type.
-func IsBasicType(t string) bool {
+// IsPrimitiveType checks whether the given type is a primitive type i.e., not a custom model.
+func IsPrimitiveType(t string) bool {
 	switch t {
 	case "string", "integer", "array":
 		return true

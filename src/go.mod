@@ -1,4 +1,4 @@
-module openapi-gen
+module openapi-generator
 
 go 1.17
 

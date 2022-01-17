@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"openapi-gen/internal/parser"
+	"openapi-generator/internal/parser"
 )
 
 // SortMapKeysAlphabetically returns an alphabetically-sorted slice of keys from a map.

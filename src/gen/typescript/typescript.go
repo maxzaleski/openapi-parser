@@ -1,27 +1,27 @@
 package typescript
 
 import (
-	"openapi-gen/internal/output"
-	"openapi-gen/internal/parser"
+	"openapi-generator/internal/output"
+	"openapi-generator/internal/parser"
 
-	"openapi-gen/gen/typescript/constants"
-	"openapi-gen/internal/slog"
+	"openapi-generator/gen/typescript/constants"
+	"openapi-generator/internal/slog"
 )
 
 const definitionsOutDir = "definitions/"
 
 // Generate generates the typescript files for the given spec.
 func Generate(doc *parser.Document, logger slog.Logger) []*output.File {
-	logger.SetPrefix("[Generate] ")
+	logger.SetPrefix("[typescript.Generate] ")
 
 	fm := output.NewFileMap()
 	generateOutput(doc, fm, logger)
 
-	// .
+	// ../packages/
 	// ├── definitions
 	// │   ├── index.ts
-	// │   └── m.ts
-	// │   └── e.ts
+	// │   └── models.ts
+	// │   └── enums.ts
 	// │   └── responses.ts
 	// │   └── requests.ts
 	// │   └── validation.ts
